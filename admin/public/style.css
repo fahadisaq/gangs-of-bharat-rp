@@ -1,0 +1,13 @@
+body { font-family: system-ui, sans-serif; margin: 0; background: #14141a; color: #eee; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background: #b3261e; }
+header h1 { font-size: 1.2rem; margin: 0; }
+form#login, nav { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.5rem 1rem; background: #1f1f28; }
+nav a { color: #ffcc4d; text-decoration: none; }
+main { display: grid; grid-template-columns: 3fr 1fr; gap: 1rem; padding: 1rem; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
+th, td { border: 1px solid #333; padding: 0.3rem 0.5rem; text-align: left; font-size: 0.9rem; }
+th { background: #262633; }
+#action-box form { display: flex; flex-direction: column; gap: 0.5rem; }
+input, select, textarea, button { font: inherit; }
+.bar { fill: #ffcc4d; }
+.error { color: #ff6b6b; }

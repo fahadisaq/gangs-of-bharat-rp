@@ -47,7 +47,7 @@ python3 -m pytest tools/docs -q
 ## What cannot be done in this sandbox
 
 - **Unity**: the editor cannot be downloaded or licensed, so no Unity project compile, no scene work, no APK/AAB or iOS build.
-- **Blender**: cannot be installed, so procedural model scripts cannot be run or checked.
+- **Blender**: cannot be installed, so the procedural model scripts cannot be run. Only their argument parsing and layout code is tested.
 - **API calls**: Sarvam (dialogue, translation, TTS) and Gemini (2D art) cannot be reached. Scripts can be written but not executed against the real APIs.
 - **Firebase**: a project cannot be created, and rules/functions cannot be deployed or emulated (the emulator needs downloads).
 - **Asset packs**: Kenney, Quaternius, Poly Haven and Mixamo content cannot be downloaded.
@@ -61,6 +61,36 @@ python3 -m pytest tools/docs -q
 - Write all design documents.
 - Build and test the .NET 8 authoritative server, the Unity-compatible shared C# core, a console test runner and a bot load test (100 and 1000 simulated players over local UDP).
 - Write the Unity client C# scripts and project files, the Python content scripts, the Blender scripts and the Firebase config. These are marked **unverified** until they run in a real environment.
+
+## Component status
+
+### Built and verified here
+
+| Component | Path | How it was verified |
+| --- | --- | --- |
+| Shared C# core | `shared/GangsOfBharat.Shared/` | `dotnet build GangsOfBharat.sln -c Release` with 0 warnings (warnings are errors) |
+| Authoritative server | `server/GangsOfBharat.Server/` | Same build, plus the end-to-end UDP test |
+| Tests | `tests/GangsOfBharat.Tests/` | `dotnet run --project tests/GangsOfBharat.Tests -c Release` exits 0 |
+| Bot load tester | `tools/GangsOfBharat.Bots/` | 100 and 1000 bot runs (see `docs/LOADTEST.md`) |
+| GDD PDF | `docs/GangsOfBharat_GDD.pdf`, `tools/docs/` | Generated with `md2pdf.py`; `python3 -m pytest tools/docs -q` |
+| Content tools (dry run) | `tools/content/` | `python3 -m pytest tools/content/tests -q` with network calls blocked; `ruff check tools` |
+| Shared copy in Unity | `client/GangsOfBharat.Unity/Assets/Scripts/Shared/` | `scripts/sync-shared-to-unity.sh --check` |
+| Admin panel (mock data) | `admin/` | `node --test admin/test` (level hierarchy, reasons, code-only admins, real-info hiding, missing-token refusal) |
+| Blender argument parsing and layout | `tools/blender/` | `python3 -m pytest tools/blender/tests -q` without `bpy`; `py_compile` and `ruff check tools` |
+| Firebase files (static checks only) | `firebase/` | `node --test admin/test` parses the JSON files and checks that `firestore.rules` denies client writes to currency, inventory, faction membership and faction permissions |
+
+### Written but not verified
+
+| Component | Path | What is needed to verify it |
+| --- | --- | --- |
+| Unity client | `client/GangsOfBharat.Unity/` | Unity 6 LTS with Android Build Support and a license: open the project, let it import, play the scenes, build an APK. A compile smoke check was done here only with throwaway hand-written `UnityEngine` stubs kept outside the repository, so real Unity API use is not proven |
+| Android CI workflow | `.github/workflows/unity-android.yml` | A GitHub remote with `UNITY_EMAIL`, `UNITY_PASSWORD` and `UNITY_LICENSE` (or `UNITY_SERIAL`) secrets, then a workflow run |
+| Blender geometry | `tools/blender/gen_city_block.py`, `gen_vehicle_auto.py` | Blender 4.x: run the commands in `tools/blender/README.md` and inspect the `.glb` files |
+| Firebase rules deploy | `firebase/firestore.rules`, `firestore.indexes.json` | Firebase CLI and the Firestore emulator (both need downloads), then rule unit tests and `firebase deploy` to a real project |
+| Cloud Functions | `firebase/SCHEMA.md` (design only) | Blaze plan, `firebase-functions` and `firebase-admin` packages, Play Developer and App Store Server API credentials |
+| Live Sarvam and Gemini calls | `tools/content/` | Network access and fresh API keys in a local `.env` |
+| Server Dockerfile | `server/GangsOfBharat.Server/Dockerfile` | Working Docker with buildx and access to `mcr.microsoft.com` |
+| Admin panel against real data | `admin/` | Firestore access through the Admin SDK and per-admin sign-in (see `admin/README.md`) |
 
 ## Options to unblock
 

@@ -19,10 +19,11 @@ GANGS OF BHARAT is a social online roleplay (RP) city game for Android and iOS, 
 | `server/GangsOfBharat.Server/` | .NET 8 authoritative UDP game server ([README](server/GangsOfBharat.Server/README.md), Dockerfile) |
 | `tests/GangsOfBharat.Tests/` | Console test runner and tests (no NuGet test framework needed) |
 | `tools/GangsOfBharat.Bots/` | Bot load tester (in-process server, or a remote one with `--host`) |
-| `tools/content/` | Python scripts for Sarvam dialogue/TTS and Gemini 2D art (planned) |
-| `tools/blender/` | Procedural Blender Python generators (planned) |
-| `client/GangsOfBharat.Unity/` | Unity project scaffold (planned) |
-| `firebase/` | Firebase config, Firestore rules and schema (planned) |
+| `tools/content/` | Python scripts for Sarvam dialogue/TTS and Gemini 2D art ([README](tools/content/README.md)) |
+| `tools/blender/` | Procedural Blender generators for city blocks and vehicles, unverified ([README](tools/blender/README.md)) |
+| `client/GangsOfBharat.Unity/` | Unity 6 project scaffold, unverified ([README](client/GangsOfBharat.Unity/README.md)) |
+| `firebase/` | Firebase config, Firestore rules, indexes and schema ([SCHEMA](firebase/SCHEMA.md)), not deployed |
+| `admin/` | Zero-dependency Node web admin panel with mock data ([README](admin/README.md)); test with `node --test admin/test` |
 | `scripts/dotnet-env.sh` | Sets writable dotnet home dirs for sandboxes with a read-only `$HOME` |
 
 ## Build and test the server
