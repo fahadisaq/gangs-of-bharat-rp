@@ -15,10 +15,10 @@ GANGS OF BHARAT is a social online roleplay (RP) city game for Android and iOS, 
 | `docs/` | Design and planning docs (see below) |
 | `docs/design/` | Game Design Document chapters (Markdown) |
 | `tools/docs/` | `md2pdf.py`, a standard-library Markdown-to-PDF converter, and its tests |
-| `shared/GangsOfBharat.Shared/` | Unity-compatible C# game core: protocol, serialization, interest grid, catalogs, localization (planned) |
-| `server/GangsOfBharat.Server/` | .NET 8 authoritative UDP game server (planned) |
-| `tests/GangsOfBharat.Tests/` | Console test runner (planned) |
-| `tools/GangsOfBharat.Bots/` | Bot load-test client (planned) |
+| `shared/GangsOfBharat.Shared/` | Unity-compatible C# game core: protocol, reliability layer, serialization, interest grid, catalogs, movement, localization |
+| `server/GangsOfBharat.Server/` | .NET 8 authoritative UDP game server ([README](server/GangsOfBharat.Server/README.md), Dockerfile) |
+| `tests/GangsOfBharat.Tests/` | Console test runner and tests (no NuGet test framework needed) |
+| `tools/GangsOfBharat.Bots/` | Bot load tester (in-process server, or a remote one with `--host`) |
 | `tools/content/` | Python scripts for Sarvam dialogue/TTS and Gemini 2D art (planned) |
 | `tools/blender/` | Procedural Blender Python generators (planned) |
 | `client/GangsOfBharat.Unity/` | Unity project scaffold (planned) |
@@ -33,10 +33,17 @@ The server, shared core and tests target `net8.0` with no NuGet packages, so the
 source scripts/dotnet-env.sh
 dotnet build GangsOfBharat.sln -c Release
 dotnet run --project tests/GangsOfBharat.Tests -c Release          # exit code 0 = all tests pass
+dotnet run --project tests/GangsOfBharat.Tests -c Release -- Chat  # only tests whose name contains "Chat"
 dotnet run --project tools/GangsOfBharat.Bots -c Release -- --bots 100 --seconds 20
+dotnet run --project tools/GangsOfBharat.Bots -c Release -- --bots 1000 --seconds 20 --area 300   # crowd test
+dotnet run --project server/GangsOfBharat.Server -c Release                                      # run the server on UDP 7777
 ```
 
 `scripts/dotnet-env.sh` only redirects `HOME` to `/tmp/dnhome` when the current home (or `~/.dotnet`) is not writable.
+
+The tests cover serialization, every protocol message, the reliability layer under loss and reordering, the spatial grid against brute force, interest tiers and the 100-entity cap, every chat channel (slow mode, ad and SMS fees, VIP gating, mute and block), proximity voice and faction radio, anti-cheat, catalogs against the design, localization, and an end-to-end test over real UDP sockets. Load test results for 100 and 1000 bots are in [docs/LOADTEST.md](docs/LOADTEST.md).
+
+The server Dockerfile (linux/arm64 for Oracle Cloud ARM) is `server/GangsOfBharat.Server/Dockerfile`. Build it from the repository root with `docker buildx build --platform linux/arm64 -f server/GangsOfBharat.Server/Dockerfile .`. It has not been built yet because Docker is unusable in the build sandbox.
 
 ## Secrets policy
 
@@ -50,5 +57,6 @@ dotnet run --project tools/GangsOfBharat.Bots -c Release -- --bots 100 --seconds
 - [Game Design Document](docs/design/00-INDEX.md): 17 chapters covering vision, city, story, factions, justice, events, economy, market, injury, communication, monetization, admin, tech, art/audio, extras, legal and roadmap. Open items are labelled "DRAFT – owner review".
 - [Game Design Document (PDF)](docs/GangsOfBharat_GDD.pdf): generated offline with `python3 tools/docs/md2pdf.py --out docs/GangsOfBharat_GDD.pdf docs/design/*.md`. Hindi lines are only in the Markdown.
 - [Architecture](docs/ARCHITECTURE.md): client, server, networking, Firebase, hosting costs, scaling, security.
+- [Load test](docs/LOADTEST.md): 100 and 1000 bot results, interpretation and optimisation ideas.
 - [Roadmap](docs/ROADMAP.md): build stages from setup to Android and iOS launch, and what the project owner must provide.
 - [Environment Status](docs/ENVIRONMENT_STATUS.md): what this build sandbox can and cannot do, and how to unblock it.

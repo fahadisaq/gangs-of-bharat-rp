@@ -52,6 +52,9 @@ python3 -m pytest tools/docs -q
 - **Firebase**: a project cannot be created, and rules/functions cannot be deployed or emulated (the emulator needs downloads).
 - **Asset packs**: Kenney, Quaternius, Poly Haven and Mixamo content cannot be downloaded.
 - **Image-to-3D**: Hunyuan3D / TRELLIS need a GPU and model downloads; neither is available.
+- **Docker**: `server/GangsOfBharat.Server/Dockerfile` (multi-stage, linux/arm64 for Oracle Cloud ARM) is written but has **not been built**: Docker is broken here and the `mcr.microsoft.com/dotnet` base images cannot be pulled.
+- **Firebase ID token check**: the game server accepts any non-empty session token as an anonymous civilian (TODO in `ServerCore.TryResolveToken`), because Google's signing certificates cannot be fetched from here.
+- **Network tuning**: `net.core.rmem_max` is 212992 here and cannot be raised, so the server's UDP receive buffer is capped at about 416 KB (see `docs/LOADTEST.md`).
 
 ## What can be done here
 

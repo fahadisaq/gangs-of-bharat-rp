@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+.git/
+.agents/
+.kiro/
+client/
+docs/
+tools/
+tests/
+.env
+.env.*
+secrets.local.json
+config/secrets*.json
