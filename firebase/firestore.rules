@@ -76,21 +76,30 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Factions: public summary; membership (rank, superiorId) is server-only.
+    // The game server sets the "faction" custom claim (faction key, or absent
+    // for civilians) through the Admin SDK whenever membership changes.
+    function inFaction(factionKey) {
+      return signedIn() && request.auth.token.faction == factionKey;
+    }
+
+    // Factions: public summary for everyone signed in. The member list (rank,
+    // superiorId chain) is visible only to members of the same faction, so
+    // rival gangs and police cannot read each other's org charts.
     match /factions/{factionKey} {
       allow read: if signedIn();
       allow write: if false;
 
       match /members/{characterId} {
-        allow read: if signedIn();
+        allow read: if inFaction(factionKey);
         allow write: if false;
       }
     }
 
-    // Rank powers, personal grants and treasury daily limits. Changed only by
-    // the game server after it checks manage_permissions in game.
+    // Rank powers, personal grants and treasury daily limits. Readable only by
+    // members of the same faction; changed only by the game server after it
+    // checks manage_permissions in game.
     match /faction_permissions/{factionKey} {
-      allow read: if signedIn();
+      allow read: if inFaction(factionKey);
       allow write: if false;
     }
 

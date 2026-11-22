@@ -7,6 +7,7 @@ This is the planned Firestore layout for GANGS OF BHARAT. The rules in `firestor
 - The **authoritative game server** and **Cloud Functions** write with the **Admin SDK**, which bypasses security rules.
 - **Clients** (the Unity app) may only read their own data, change their language and settings, open support tickets and edit their chat block list. Every collection that holds value is `allow write: if false` for clients.
 - Anything not listed in the rules is **denied by default**.
+- The game server keeps a **`faction` custom claim** (faction key, absent for civilians) on each player's Firebase Auth token, set with the Admin SDK whenever membership changes. Faction member lists and permission data are readable only when this claim matches, so rival factions cannot read each other's org charts, personal grants or treasury limits. The client must refresh its ID token after a faction change.
 - Money values are whole rupees (`long`), matching the server `Ledger`. Times are Firestore timestamps (UTC). Daily limits reset at 00:00 IST.
 
 ## Collections
@@ -20,8 +21,8 @@ This is the planned Firestore layout for GANGS OF BHARAT. The rules in `firestor
 | `houses` | house ID | `ownerCharacterId`, `district`, `priceRupees`, `taxDueAt`, `safe`, `cctv`, `dog`, `lastOwnerActiveAt` | Read (signed in). No writes |
 | `businesses` | business ID | `ownerCharacterId`, `kind`, `district`, `staff[]`, `prices`, `lastOwnerActiveAt` (lost after 7 days inactive) | Read (signed in). No writes |
 | `factions` | faction key (`police`, `army`, `hospital`, `fire`, `government`, `court`, `media`, gang and mafia keys) | `name`, `headCharacterId`, `headTermEndsAt`, `treasuryRupees`, `slotCap` | Read (signed in). No writes |
-| `factions/{key}/members` | character ID | `factionKey`, `rank` (0 = head, larger = lower), `superiorId` (character ID of the direct leader whose unit the member is in; empty for the head), `joinedAt`, `lastActiveAt`, `onDuty` | Read (signed in). No writes |
-| `faction_permissions` | faction key | `rankPowers` (map rank -> list of power keys), `personalGrants` (map character ID -> list of power keys), `rankDailyLimitRupees` (map rank -> ₹), `personalDailyLimitRupees` (map character ID -> ₹), `spentToday` (map character ID -> `{ day, rupees }`), `updatedBy`, `updatedAt` | Read (signed in). No writes |
+| `factions/{key}/members` | character ID | `factionKey`, `rank` (0 = head, larger = lower), `superiorId` (character ID of the direct leader whose unit the member is in; empty for the head), `joinedAt`, `lastActiveAt`, `onDuty` | Read by members of the same faction only (`faction` custom claim). No writes |
+| `faction_permissions` | faction key | `rankPowers` (map rank -> list of power keys), `personalGrants` (map character ID -> list of power keys), `rankDailyLimitRupees` (map rank -> ₹), `personalDailyLimitRupees` (map character ID -> ₹), `spentToday` (map character ID -> `{ day, rupees }`), `updatedBy`, `updatedAt` | Read by members of the same faction only (`faction` custom claim). No writes |
 | `faction_audit` | auto ID | `factionKey`, `at`, `action` (`hire`, `fire`, `promote`, `demote`, `reassign_unit`, `grant_power`, `revoke_power`, `set_limit`, `spend_treasury`, ...), `actorId`, `targetId`, `detail` | None (server and admin panel only) |
 | `transactions` | auto ID | `uid`, `from`, `to` (ledger accounts: cash, bank, faction treasury, escrow, city treasury, sink, source), `amountRupees`, `reason`, `createdAt` | Read own. No writes |
 | `auctions` | auction ID | `itemKind` (house, business, vehicle), `itemId`, `status`, `endsAt` (anti-snipe extension), `highBidRupees`, `highBidderId`, `escrowTxId`, `commissionRupees` | Read (signed in). No writes |

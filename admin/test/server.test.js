@@ -144,3 +144,28 @@ test('bad JSON body is rejected', async () => {
   });
   assert.equal(res.status, 400);
 });
+
+test('player, admin and ticket actions need a real target of the right kind', async () => {
+  const reason = 'Repeated cheating reports';
+  const bansBefore = (await call('/api/bans')).body.length;
+  const logBefore = (await call('/api/log')).body.length;
+  const post = (body, code = 'ADM-05') => call('/api/actions', { code, method: 'POST', body });
+
+  for (const action of ['perm_ban', 'temp_ban', 'mute', 'kick', 'jail', 'set_admin_level', 'close_ticket']) {
+    const missing = await post({ action, reason, newLevel: 1 });
+    assert.equal(missing.status, 400, `${action} without targetId`);
+    assert.match(missing.body.error, /targetId is required/);
+    assert.equal((await post({ action, reason, newLevel: 1, targetId: '' })).status, 400, `${action} empty targetId`);
+  }
+  assert.equal((await post({ action: 'perm_ban', reason, targetId: 'ch-9999' })).status, 404, 'unknown player');
+  assert.equal((await post({ action: 'perm_ban', reason, targetId: 'T-501' })).status, 404, 'a ticket is not a player');
+  assert.equal((await post({ action: 'close_ticket', reason, targetId: 'ch-1004' })).status, 404, 'a player is not a ticket');
+  assert.equal((await call('/api/bans')).body.length, bansBefore, 'no ban without a target');
+  assert.equal((await call('/api/log')).body.length, logBefore, 'nothing logged for refused actions');
+
+  const ok = await post({ action: 'perm_ban', reason, targetId: 'ch-1004' });
+  assert.equal(ok.status, 200);
+  const bans = (await call('/api/bans')).body;
+  assert.equal(bans.length, bansBefore + 1);
+  assert.equal(bans[bans.length - 1].playerId, 'ch-1004');
+});

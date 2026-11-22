@@ -84,6 +84,15 @@ test('players may change only language and settings, never currency', () => {
   assert.ok(rules.some((s) => /allow create, delete:\s*if false$/.test(s)));
 });
 
+test('faction member lists and permissions are readable only by the same faction', () => {
+  assert.match(RULES, /function inFaction\(factionKey\)\s*\{\s*return signedIn\(\) && request\.auth\.token\.faction == factionKey;\s*\}/);
+  for (const name of ['members', 'faction_permissions']) {
+    const reads = allowStatements(matchBody(name)).filter((s) => /\bread\b/.test(s.split(':')[0]));
+    assert.equal(reads.length, 1, `${name} should have one read rule`);
+    assert.match(reads[0], /:\s*if\s+inFaction\(factionKey\)$/, `${name} read is too wide: ${reads[0]}`);
+  }
+});
+
 test('default deny is present', () => {
   assert.match(RULES, /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;\s*\}/);
 });

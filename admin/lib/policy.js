@@ -41,6 +41,22 @@ const ACTION_MIN_LEVEL = Object.freeze({
 // Actions whose target is an admin rather than a player.
 const ADMIN_TARGET_ACTIONS = new Set(['set_admin_level']);
 
+// Actions that must name an existing player (targetId = player ID).
+const PLAYER_TARGET_ACTIONS = new Set([
+  'warn',
+  'mute',
+  'kick',
+  'teleport_to',
+  'spectate',
+  'jail',
+  'temp_ban',
+  'long_temp_ban',
+  'perm_ban',
+]);
+
+// Actions that must name an existing support ticket.
+const TICKET_TARGET_ACTIONS = new Set(['close_ticket']);
+
 function isValidLevel(level) {
   return Number.isInteger(level) && level >= 1 && level <= OWNER_LEVEL;
 }
@@ -124,6 +140,8 @@ module.exports = {
   LEVEL_TITLES,
   MIN_REASON_LENGTH,
   OWNER_LEVEL,
+  PLAYER_TARGET_ACTIONS,
+  TICKET_TARGET_ACTIONS,
   canActOn,
   checkAction,
   displayAdmin,

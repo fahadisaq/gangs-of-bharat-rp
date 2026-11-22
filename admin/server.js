@@ -93,18 +93,34 @@ function createApp({ token, data = createMockData(), now = () => new Date() } = 
     return { admin };
   }
 
+  // Returns { level, admin | player | ticket }, or { status, error } when the target is
+  // missing or of the wrong kind. Actions on players, admins and tickets always need a target.
   function resolveTarget(request) {
-    if (policy.ADMIN_TARGET_ACTIONS.has(request.action)) {
-      const target = data.admins.find((a) => a.code === request.targetId);
-      return target ? { level: target.level, admin: target } : null;
-    }
-    if (request.targetId === undefined || request.targetId === null) {
+    const id = request.targetId;
+    const hasId = typeof id === 'string' && id.length > 0;
+    const needsTarget = policy.ADMIN_TARGET_ACTIONS.has(request.action)
+      || policy.PLAYER_TARGET_ACTIONS.has(request.action)
+      || policy.TICKET_TARGET_ACTIONS.has(request.action);
+    if (!hasId) {
+      if (needsTarget) return { status: 400, error: 'targetId is required for this action' };
       return { level: null };
     }
-    const player = data.players.find((p) => p.id === request.targetId);
+    if (policy.ADMIN_TARGET_ACTIONS.has(request.action)) {
+      const target = data.admins.find((a) => a.code === id);
+      return target ? { level: target.level, admin: target } : { status: 404, error: 'admin not found' };
+    }
+    if (policy.PLAYER_TARGET_ACTIONS.has(request.action)) {
+      const player = data.players.find((p) => p.id === id);
+      return player ? { level: player.adminLevel || 0, player } : { status: 404, error: 'player not found' };
+    }
+    if (policy.TICKET_TARGET_ACTIONS.has(request.action)) {
+      const ticket = data.tickets.find((t) => t.id === id);
+      return ticket ? { level: 0, ticket } : { status: 404, error: 'ticket not found' };
+    }
+    const player = data.players.find((p) => p.id === id);
     if (player) return { level: player.adminLevel || 0, player };
-    const ticket = data.tickets.find((t) => t.id === request.targetId);
-    return ticket ? { level: 0, ticket } : null;
+    const ticket = data.tickets.find((t) => t.id === id);
+    return ticket ? { level: 0, ticket } : { status: 404, error: 'target not found' };
   }
 
   function applyAction(admin, request, target) {
@@ -116,7 +132,7 @@ function createApp({ token, data = createMockData(), now = () => new Date() } = 
       case 'long_temp_ban':
       case 'perm_ban':
         data.bans.push({
-          playerId: request.targetId,
+          playerId: target.player.id,
           kind: request.action === 'perm_ban' ? 'permanent' : 'temporary',
           reason: request.reason.trim(),
           adminCode: admin.code,
@@ -124,7 +140,7 @@ function createApp({ token, data = createMockData(), now = () => new Date() } = 
         });
         break;
       case 'close_ticket':
-        if (target.ticket) target.ticket.status = 'closed';
+        target.ticket.status = 'closed';
         break;
       default:
         break;
@@ -138,8 +154,8 @@ function createApp({ token, data = createMockData(), now = () => new Date() } = 
       return;
     }
     const target = resolveTarget(request);
-    if (!target) {
-      sendJson(res, 404, { error: 'target not found' });
+    if (target.error) {
+      sendJson(res, target.status, { error: target.error });
       return;
     }
     const check = policy.checkAction(admin, request, target.level);
