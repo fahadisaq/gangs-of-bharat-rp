@@ -15,6 +15,99 @@ All salaries are in ₹ **per payday**. Payday is every **30 minutes of active p
 - **Selling ranks for money or items = ban.**
 - A character can be in **one faction at a time**.
 
+### Ranks, units and chain of command
+
+- **Many players can hold the same rank.** A faction can have several Colonels, Majors, DCPs, Area Commanders and so on, up to the **seat count** of that rank in the faction's table. A promotion or hire into a rank is possible only while that rank has a free seat.
+- **Every member except the head has exactly one direct superior.** The head (rank 0) has no superior.
+- A leader's **unit** is everyone below them in their chain of command: their direct reports, the reports of those reports, and so on (their subtree).
+- A leader can **hire, fire, promote, demote and reassign only members inside their own unit**. A Colonel manages only their own unit, never another Colonel's unit.
+- **Members of the same rank can never fire, demote or otherwise act on each other**, even when one of them has extra powers. Nobody acts on equal or higher rank.
+- The **head (rank 0) commands the whole faction**: every member is inside the head's unit.
+- **New hires join the hiring leader's unit.** The leader picks who the new member reports to: the leader themself or a member inside the leader's unit (a sub-unit). The new member's rank must be lower than the rank of the member they report to.
+- **When a leader leaves or is fired, their direct reports move up** to that leader's own superior. Nobody is left without a superior. If the head leaves, the head's direct reports wait without a superior until admins pick the new head, then report to the new head.
+- A leader can **move a member between sub-units inside their own unit** (change the member's direct superior to another member of the unit, or to the leader). The new superior must have a higher rank than the moved member. Members can never be moved into or out of another leader's unit except by a leader who commands both (for example the head).
+- Promotion keeps the member's position in the chain: they still report to the same superior. If the promotion would put them at the same rank as their superior, they must first be moved to a higher superior.
+
+Examples:
+
+| Faction | Chain of command |
+| --- | --- |
+| Army | General -> 2 Colonels. Each Colonel has their own Majors, each Major their own Captains, down to Recruits. Colonel A can fire a Major in unit A but not a Major in Colonel B's unit, and cannot act on Colonel B. |
+| Police | Commissioner -> 2 DCPs (for example North and South). Each DCP has their own ACPs, each ACP their own Inspectors, SIs and Constables. A DCP manages only their own zone. |
+| Gangs | Bhai -> Right Hand -> 4 Area Commanders, each with their own crew of Shooters, Members and Recruits. An Area Commander recruits into and runs only their own crew. |
+| Mass Media | Media Head -> 4 Department Heads (TV, Radio, Paper, Digital). Each Department Head leads their own department of Senior Reporters / RJs / Editors, Reporters / Cameramen and Interns. |
+
+## Permissions
+
+These rules apply to **every faction**: Police, Army, Hospital, Fire, Government, Court, Gangs, Mafia and Mass Media.
+
+### Powers
+
+Each power has a stable key used by the server and the faction app.
+
+| Key | Power | Factions |
+| --- | --- | --- |
+| `recruit` | Hire new members into their own unit | All |
+| `fire` | Fire a member of their own unit (with written reason) | All |
+| `promote` | Promote a member of their own unit (up to one rank below their own) | All |
+| `demote` | Demote a member of their own unit | All |
+| `reassign_unit` | Move a member between sub-units inside their own unit | All |
+| `run_interviews` | Shortlist applicants and run recruitment interviews and tests | All |
+| `post_hiring_ads` | Post hiring ads in the faction app | All |
+| `mute_faction_chat` | Mute members of their own unit in faction chat and faction radio | All |
+| `spend_treasury` | Spend from the faction treasury, up to a daily limit | All |
+| `start_convoy` | Start a convoy (weapon, rations, contraband or smuggling run) | Army, Police, Gangs, Mafia |
+| `manage_armory` | Manage the armory / locker stock and gear issue | All |
+| `sell_ads` | Sell TV, radio, billboard and paper ads to businesses | Mass Media |
+| `go_live` | Start a live TV or radio broadcast | Mass Media |
+| `publish_paper` | Publish the daily newspaper in the phone's news app | Mass Media |
+| `manage_permissions` | Open the permissions screen and change powers | All (head only, never grantable) |
+
+### Rules
+
+- The **head has every power** of their faction.
+- The head opens the **permissions screen** in the faction phone app and **toggles each power per rank**.
+- The head can also **grant or revoke a single power for one specific person** (for example "Captain Rahul can recruit"). Revoking removes that personal grant. To take a rank power away from one person, the head changes the rank's powers or demotes the person.
+- **Effective powers = rank powers + personal grants.**
+- **Nobody can receive a power the head does not have**, and a faction-specific power can only be given inside that faction. **`manage_permissions` can never be given** to anyone (rank or person); only the head has it.
+- **A power never lets someone act outside their own unit or on a member of equal or higher rank.** For example a Captain with `recruit` hires only into their own unit and at a rank lower than their own.
+- Personal grants stay when the member is promoted or demoted and are removed when the member leaves the faction. Permission settings belong to the faction and stay when the head changes; the new head can change them.
+- **`spend_treasury` has a daily limit in ₹**, set **per rank** and optionally **per person**. A personal limit replaces the rank limit for that person. A personal `spend_treasury` grant without a personal limit uses **₹10,000 per day** (DRAFT – owner review). Limits **reset at 00:00 IST** server time. A spend that would go over the remaining daily limit is refused.
+- **Every permission change is written to the faction audit log**: who made the change, which power, which rank or person, and old value -> new value (including daily limit changes). **Every treasury spend** is logged too (who, amount, reason, remaining daily limit). The head and admins can read the audit log.
+
+### Default permissions
+
+New factions and factions after a server reset start with this table. The head can change it at any time. Rank numbers count from the head: rank 0 is the head, rank 1 the next rank, and so on.
+
+| Rank | Default powers |
+| --- | --- |
+| Rank 0 (head) | All powers of the faction, including `manage_permissions`; `spend_treasury` **unlimited** |
+| Rank 1 | Every power of the faction except `manage_permissions`; `spend_treasury` limit **₹50,000 per day** |
+| Middle leader ranks (any rank below rank 1 that has at least two ranks below it) | `recruit`, `fire`, `promote`, `demote`, `reassign_unit`, `run_interviews`, `post_hiring_ads`, `mute_faction_chat` |
+| The two lowest ranks | No powers |
+
+Faction-specific additions to the defaults:
+
+- **`spend_treasury`**: by default only ranks 0 and 1 (rank 0 unlimited, rank 1 ₹50,000 per day).
+- **`start_convoy`**: ranks 0, 1 and 2 in Army, Police, Gangs and Mafia.
+- **Mass Media**: Department Heads (rank 1) have `sell_ads`, `go_live` and `publish_paper` (already included in "every power"). Senior Reporter / RJ / Editor (rank 2) also has `go_live`.
+
+What this means per faction (ranks 0 and 1 not repeated):
+
+| Faction | Middle leader ranks | No powers by default |
+| --- | --- | --- |
+| Police | DCP is rank 1; ACP, Inspector, SI, Head Constable (ACP also `start_convoy`) | Constable, Trainee |
+| Army | Colonel is rank 1; Major, Captain, Lieutenant, Sergeant (Major also `start_convoy`) | Soldier, Recruit |
+| Hospital | Senior Doctor is rank 1; Doctor, Nurse | Paramedic, Intern |
+| Fire | Station Officer is rank 1; none | Firefighter, Trainee |
+| Government | Deputy Mayor is rank 1; Minister | Officer, Security |
+| Court | Judge is rank 1; none | Prosecutor, Clerk |
+| Gangs | Right Hand is rank 1; Area Commander, Shooter (Area Commander also `start_convoy`) | Member, Recruit |
+| Mafia | Consigliere is rank 1; Captain (also `start_convoy`) | Soldier, Associate |
+| Mass Media | Department Head is rank 1; Senior Reporter / RJ / Editor (also `go_live`) | Reporter / Cameraman, Intern |
+
+**DRAFT – owner review**: the default permission table, the ₹50,000 daily limit for rank 1 and the ₹10,000 default for personal treasury grants.
+
 ## Duty system
 
 - Faction gear, uniform, weapons and vehicles are available **only while on duty**.
@@ -24,7 +117,7 @@ All salaries are in ₹ **per payday**. Payday is every **30 minutes of active p
 ## Payday
 
 - Payday every **30 minutes of active play**. AFK time does not count (no AFK pay).
-- **Government factions** (Police, Army, Hospital, Fire, Government, News, Court) are paid **from the city treasury**, with a **minimum salary floor** so pay never drops to zero when the treasury is low.
+- **Government factions** (Police, Army, Hospital, Fire, Government, Mass Media, Court) are paid **from the city treasury**, with a **minimum salary floor** so pay never drops to zero when the treasury is low.
 - **Gangs and Mafia have no salary.** They earn from their activities.
 
 ## Switching factions
@@ -41,15 +134,15 @@ All salaries are in ₹ **per payday**. Payday is every **30 minutes of active p
 | Hospital | 40 |
 | Fire | 20 |
 | Government | 25 |
-| News | 20 |
+| Mass Media | 30 |
 | Gangs (4 x 40) | 160 |
 | Mafia (2 x 30) | 60 |
 | Court | 15 |
-| **Faction total** | **480** |
-| Civilians (the rest) | 520 |
+| **Faction total** | **490** |
+| Civilians (the rest) | 510 |
 | **Total** | **1000** |
 
-In short: Police 80, Army 60, Hospital 40, Fire 20, Government 25, News 20, Gangs 4x40, Mafia 2x30, Court ~15, the rest civilians. Civilians are always the remainder: 1000 - 480 = 520. Civilians include licensed lawyers, business owners, drivers and every other job.
+In short: Police 80, Army 60, Hospital 40, Fire 20, Government 25, Mass Media 30, Gangs 4x40, Mafia 2x30, Court ~15, the rest civilians. Civilians are always the remainder: 1000 - 490 = 510. Civilians include licensed lawyers, business owners, drivers and every other job.
 
 ## Police (80)
 
@@ -120,18 +213,39 @@ Plus **50% of hospital fees** (the rest goes to the treasury). Paramedics answer
 
 The **Mayor sets taxes, the budget and laws** (within system limits). The Mayor is **elected every 30 days** by players; admins do not pick the Mayor.
 
-## News (20)
+## Mass Media (30)
+
+Faction key: `media`. Mass Media runs every media outlet in the city: TV, radio, the newspaper, official social media pages and the ad agency.
+
+### Departments
+
+| Department | What it does |
+| --- | --- |
+| TV news channel | Live and breaking news, election debates, event coverage |
+| Radio station | Live player-hosted shows heard in every car radio, song and shout-out requests, radio ads |
+| Newspaper | Daily paper in the phone's news app, edited by the Paper department |
+| Social media / influencers | Official city pages, interviews and posts in the phone social app (Digital department) |
+| Ad agency | Businesses pay for TV, radio, billboard and paper ads. Run by the Media Head's office; members with `sell_ads` close the sales |
+
+### Ranks
 
 | Rank | Count | Salary per payday |
 | --- | --- | --- |
-| Editor | 1 | ₹7k |
-| Senior Reporter | 3 | ₹4k |
-| Reporter | 6 | ₹2.8k |
-| Cameraman | 5 | ₹2k |
-| Intern | 5 | ₹1.2k |
-| **Total** | **20** | |
+| Media Head (picked by admins) | 1 | ₹8k |
+| Department Head (TV, Radio, Paper, Digital) | 4 | ₹5.5k |
+| Senior Reporter / RJ / Editor | 7 | ₹4k |
+| Reporter / Cameraman | 12 | ₹2.6k |
+| Intern | 6 | ₹1.2k |
+| **Total** | **30** | |
 
-Plus **50% of ad revenue** (paid ad chat and news ads). Runs news broadcasts, interviews and event coverage.
+Each Department Head leads their own department unit (see Ranks, units and chain of command). Only members with `go_live` can start a TV or radio broadcast, and only members with `publish_paper` can publish the daily paper.
+
+### Income
+
+- **50% of ad chat fees** and **50% of every TV, radio, billboard and paper ad sale** go to the **Mass Media treasury**. The other 50% goes to the **city treasury**.
+- Members get their **salary** (paid from the city treasury like other government factions) **plus an ad share**: at each payday, **30% of the ad income the Mass Media treasury received since the previous payday** is taken from the Mass Media treasury and **split equally among the Mass Media members paid that payday**.
+
+**DRAFT – owner review**: the 30% ad share and the equal split.
 
 ## Gangs (4 gangs x 40)
 
@@ -194,7 +308,7 @@ Roles: **Chief Justice** (picked by admins), **Judges**, **Prosecutor**, **Clerk
 | Hospital | Medical quiz, revive on a training dummy |
 | Fire | Fire drill |
 | Government | Interview |
-| News | Mock news report |
+| Mass Media | Mock news report (TV, Paper, Digital) or a 2-minute mock radio show (Radio) |
 
 7. **Result by in-game SMS.**
 8. **3-day probation.**
@@ -210,4 +324,4 @@ Invite -> meet in person -> **loyalty task** -> approval by the Bhai/Don (or Rig
 
 ## Promotions
 
-A promotion needs all of: **duty hours**, **completed tasks**, **time in rank**, and **leader approval**. Leaders can promote only up to one rank below their own.
+A promotion needs all of: **duty hours**, **completed tasks**, **time in rank**, and **leader approval**. Leaders can promote only up to one rank below their own, only members inside their own unit, and only into a rank with a free seat (see Ranks, units and chain of command).

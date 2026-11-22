@@ -12,13 +12,13 @@ The city is **Mayanagri** ("city of illusions"), a fictional Mumbai-inspired meg
 | --- | --- | --- |
 | Slum start zone | Dense chawls and narrow lanes where every new player starts | Story intro, first jobs, cheap slum rooms, gang presence |
 | Market / old city | Bazaars, old buildings, temples, mosques, street food | Shops, 24/7 stores, dhabas, clothing, pickpocket RP, police stations |
-| Business district | Glass towers, banks, offices, hotels | Banks, government offices, news office, court, real estate, hotels |
+| Business district | Glass towers, banks, offices, hotels | Banks, government offices, Mass Media office (TV, radio, paper), court, real estate, hotels |
 | Rich hills | Bungalows and villas on a hill | Expensive houses, private garages, 5★ hotel views |
 | Sea-link + beach | Sea bridge, beach promenade, sea-facing hotels | Races, nightlife, beach events, 5★ sea-facing hotel |
 | Port + highway with dhabas | Container port, warehouses, long highway with roadside dhabas | Truck jobs, mafia port shipments, smuggling, fuel tankers, petrol pumps |
 | Village outskirts | Fields, tractors, small village, quarry | Farmer and quarry jobs, army base area, races on village roads |
 
-Factions have fixed headquarters (police HQ and stations, army base with weapon factory and depot, hospital, fire station, government building, news office, court, gang hideouts, mafia clubs and port warehouses).
+Factions have fixed headquarters (police HQ and stations, army base with weapon factory and depot, hospital, fire station, government building, Mass Media office, court, gang hideouts, mafia clubs and port warehouses).
 
 ## Transport
 

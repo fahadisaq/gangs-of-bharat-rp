@@ -67,7 +67,7 @@ Unity Vivox has a free tier and built-in positional channels, so it is the fallb
 | Group / crew | Text | Group members | Free or small ₹ fee |
 | Public / global | Text | Whole server, slow mode | Free |
 | VIP | Text | VIP members | VIP membership |
-| Ad | Text | Whole server | ₹ per message (money sink) |
+| Ad | Text | Whole server | ₹ per message (money sink; 50% Mass Media treasury, 50% city treasury) |
 | Phone SMS | Text | One-to-one | Needs ₹ recharge |
 | In-game phone call | Voice | One-to-one (DRAFT – owner review) | Uses recharge |
 | Admin announcement | Text | Whole server | Admins only |

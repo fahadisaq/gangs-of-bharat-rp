@@ -30,7 +30,7 @@ Coin packs (price per pack, coins per pack not decided):
 
 - **Premium cars are available ONLY with real money via IAP coins.** They cannot be bought with ₹.
 - **Rotating store** controlled by the owner (from the admin panel), with **limited editions**.
-- Promotion through in-game **billboards**, **news** ads and **push notifications** (opt-in).
+- Promotion through in-game **billboards**, **Mass Media** (TV, radio, paper) ads and **push notifications** (opt-in).
 - **Resale**: premium cars can be resold to other players for in-game ₹ with a **10% fee**. **DRAFT – owner review**: premium resale.
 
 ## Other premium items
