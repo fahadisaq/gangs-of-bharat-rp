@@ -371,50 +371,86 @@ namespace GangsOfBharat.Tests
             // ManualClock starts at 2025-01-01 00:00 UTC = 05:30 IST.
             ManualClock clock;
             FactionService f = NewArmy(out clock);
+            Ledger ledger = new Ledger(clock);
+            string treasury = Ledger.FactionTreasury(FactionId.Army);
+            ledger.Mint(treasury, 100000000, "test_setup");
+            string to = Ledger.Escrow("supplier");
             Assert.Equal(50000L, f.GetTreasuryDailyLimit("colA"), "rank 1 default");
             Assert.Equal(FactionPowers.UnlimitedRupees, f.GetTreasuryDailyLimit("gen"), "head unlimited");
-            Assert.Equal(FactionResult.Ok, f.AuthorizeTreasurySpend("colA", 30000, "rations"));
-            Assert.Equal(FactionResult.LimitExceeded, f.AuthorizeTreasurySpend("colA", 25000, "fuel"));
-            Assert.Equal(FactionResult.Ok, f.AuthorizeTreasurySpend("colA", 20000, "fuel"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("colA", ledger, to, 30000, "rations"));
+            Assert.Equal(30000L, ledger.GetBalance(to), "money moved in the same call");
+            Assert.Equal(FactionResult.LimitExceeded, f.SpendTreasury("colA", ledger, to, 25000, "fuel"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("colA", ledger, to, 20000, "fuel"));
             Assert.Equal(0L, f.GetTreasuryRemainingToday("colA"));
-            Assert.Equal(FactionResult.LimitExceeded, f.AuthorizeTreasurySpend("colA", 1, "more"));
-            Assert.Equal(FactionResult.Ok, f.AuthorizeTreasurySpend("gen", 10000000, "weapon crates"));
-            Assert.Equal(FactionResult.MissingPower, f.AuthorizeTreasurySpend("majA", 1, "no power"));
-            Assert.Equal(FactionResult.ReasonRequired, f.AuthorizeTreasurySpend("colA", 1, " "));
-            Assert.Equal(FactionResult.InvalidArgument, f.AuthorizeTreasurySpend("colA", 0, "zero"));
+            Assert.Equal(FactionResult.LimitExceeded, f.SpendTreasury("colA", ledger, to, 1, "more"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("gen", ledger, to, 10000000, "weapon crates"));
+            Assert.Equal(FactionResult.MissingPower, f.SpendTreasury("majA", ledger, to, 1, "no power"));
+            Assert.Equal(FactionResult.ReasonRequired, f.SpendTreasury("colA", ledger, to, 1, " "));
+            Assert.Equal(FactionResult.InvalidArgument, f.SpendTreasury("colA", ledger, to, 0, "zero"));
+            Assert.Equal(FactionResult.InvalidArgument, f.SpendTreasury("colA", null, to, 1, "no ledger"));
+            Assert.Equal(10050000L, ledger.GetBalance(to), "failed calls move nothing");
 
             FactionAuditEntry spend = f.GetAuditLog().First(e => e.Action == "treasury_spend");
             Assert.Equal("colA", spend.ActorId);
-            Assert.Equal("amount=30000;reason=rations;remaining=20000", spend.Detail);
+            Assert.Equal("amount=30000;to=escrow:supplier;reason=rations;remaining=20000", spend.Detail);
 
             clock.Advance(new TimeSpan(18, 29, 59));
-            Assert.Equal(FactionResult.LimitExceeded, f.AuthorizeTreasurySpend("colA", 1, "23:59:59 IST"));
+            Assert.Equal(FactionResult.LimitExceeded, f.SpendTreasury("colA", ledger, to, 1, "23:59:59 IST"));
             clock.AdvanceSeconds(1);
-            Assert.Equal(FactionResult.Ok, f.AuthorizeTreasurySpend("colA", 50000, "00:00 IST reset"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("colA", ledger, to, 50000, "00:00 IST reset"));
 
             // Personal grant without a personal limit uses the 10,000 default; a personal limit replaces the rank limit.
             Assert.Equal(FactionResult.Ok, f.GrantPower("gen", "majA", FactionPower.SpendTreasury));
             Assert.Equal(10000L, f.GetTreasuryDailyLimit("majA"));
-            Assert.Equal(FactionResult.LimitExceeded, f.AuthorizeTreasurySpend("majA", 10001, "too much"));
-            Assert.Equal(FactionResult.Ok, f.AuthorizeTreasurySpend("majA", 10000, "repairs"));
+            Assert.Equal(FactionResult.LimitExceeded, f.SpendTreasury("majA", ledger, to, 10001, "too much"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("majA", ledger, to, 10000, "repairs"));
             Assert.Equal(FactionResult.Ok, f.SetPersonTreasuryDailyLimit("gen", "colB", 1000));
-            Assert.Equal(FactionResult.LimitExceeded, f.AuthorizeTreasurySpend("colB", 1500, "over personal limit"));
-            Assert.Equal(FactionResult.Ok, f.AuthorizeTreasurySpend("colB", 1000, "within personal limit"));
+            Assert.Equal(FactionResult.LimitExceeded, f.SpendTreasury("colB", ledger, to, 1500, "over personal limit"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("colB", ledger, to, 1000, "within personal limit"));
             Assert.Equal(FactionResult.Ok, f.SetTreasuryDailyLimit("gen", Colonel, 0));
-            Assert.Equal(FactionResult.LimitExceeded, f.AuthorizeTreasurySpend("colA", 1, "rank limit now 0"));
+            Assert.Equal(FactionResult.LimitExceeded, f.SpendTreasury("colA", ledger, to, 1, "rank limit now 0"));
+        }
+
+        [Test]
+        public static void TreasurySpendFailingInLedgerKeepsLimitAndLogsNothing()
+        {
+            ManualClock clock;
+            FactionService f = NewArmy(out clock);
+            Ledger ledger = new Ledger(clock);
+            string treasury = Ledger.FactionTreasury(FactionId.Army);
+            ledger.Mint(treasury, 5000, "test_setup");
+            string to = Ledger.Escrow("supplier");
+            int auditBefore = f.GetAuditLog().Count;
+
+            Assert.Equal(FactionResult.InsufficientFunds, f.SpendTreasury("colA", ledger, to, 6000, "too much"));
+            Assert.Equal(FactionResult.InvalidArgument, f.SpendTreasury("colA", ledger, treasury, 100, "to itself"));
+            Assert.Equal(0L, f.GetTreasurySpentToday("colA"), "limit not consumed");
+            Assert.Equal(50000L, f.GetTreasuryRemainingToday("colA"));
+            Assert.Equal(auditBefore, f.GetAuditLog().Count, "no treasury_spend entry for money that never moved");
+            Assert.Equal(5000L, ledger.GetBalance(treasury));
+
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("colA", ledger, to, 5000, "all of it"));
+            Assert.Equal(5000L, f.GetTreasurySpentToday("colA"));
+            Assert.Equal(0L, ledger.GetBalance(treasury));
         }
 
         // ---- Mass Media payday ----
 
-        [Test]
-        public static void MediaPaydayAdShareSplitEquallyWithRemainderKept()
+        private static FactionService NewMedia(ManualClock clock)
         {
-            ManualClock clock = new ManualClock();
             FactionService f = new FactionService(clock);
             Assert.Equal(FactionResult.Ok, f.AppointHead("admin", FactionId.Media, "mh"));
             Assert.Equal(FactionResult.Ok, f.Hire("mh", "rep", 3));
             Assert.Equal(FactionResult.Ok, f.Hire("mh", "intern", 4));
             Assert.Equal(FactionResult.Ok, f.AppointHead("admin", FactionId.Police, "cmr"));
+            return f;
+        }
+
+        [Test]
+        public static void MediaAdShareSplitAmongMembersAndPaidAtEachOwnPayday()
+        {
+            ManualClock clock = new ManualClock();
+            FactionService f = NewMedia(clock);
             Ledger ledger = new Ledger(clock);
             ledger.Mint(Ledger.CityTreasury, 1000000, "test_setup");
             string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
@@ -422,32 +458,81 @@ namespace GangsOfBharat.Tests
             PaydayService pay = new PaydayService(f, ledger);
             pay.RecordMediaAdIncome(10005);
 
-            // No Media payday yet: the income keeps accumulating.
-            Assert.Equal(1, pay.AddPlayTime("cmr", 1800, false, null));
-            Assert.Equal(10005L, pay.MediaAdIncomeSincePayday);
+            // 30% of 10,005 = 3,001; split among the 3 Media members = 1,000 each; 1 kept for the next split.
+            Assert.Equal(1000L, pay.MediaAdShareOwed("mh"));
+            Assert.Equal(1000L, pay.MediaAdShareOwed("rep"));
+            Assert.Equal(1000L, pay.MediaAdShareOwed("intern"));
+            Assert.Equal(0L, pay.MediaAdShareOwed("cmr"), "police get no ad share");
+            Assert.Equal(1L, pay.MediaAdShareUnallocated);
 
+            // Paydays in different ticks: each member gets their own share, not the first one the whole pool.
             List<PaydayRecord> paid = new List<PaydayRecord>();
-            int n = pay.AddPlayTime(new[]
-            {
-                new PlayTimeEntry("mh", 1800, false),
-                new PlayTimeEntry("rep", 1800, false),
-                new PlayTimeEntry("intern", 1800, true),
-                new PlayTimeEntry("cmr", 1800, false),
-            }, paid);
-            Assert.Equal(3, n, "AFK intern not paid");
-            // 30% of 10,005 = 3,001; split between 2 Media paydays = 1,500 each; 1 stays in the treasury.
-            Assert.Equal(1500L, paid[0].AdShare);
-            Assert.Equal(8000L + 1500L, paid[0].Total, "salary plus ad share");
-            Assert.Equal(1500L, paid[1].AdShare);
-            Assert.Equal(2600L + 1500L, ledger.GetBalance(Ledger.Bank("rep")));
-            Assert.Equal(0L, paid[2].AdShare, "police get no ad share");
-            Assert.Equal(10005L - 3000L, ledger.GetBalance(mediaTreasury), "remainder kept");
-            Assert.Equal(0L, pay.MediaAdIncomeSincePayday, "reset after the Media payday");
+            Assert.Equal(1, pay.AddPlayTime("mh", 1800, false, paid));
+            Assert.Equal(1000L, paid[0].AdShare);
+            Assert.Equal(8000L + 1000L, paid[0].Total, "salary plus ad share");
+            Assert.Equal(0L, pay.MediaAdShareOwed("mh"));
+
+            pay.AddPlayTime("rep", 900, false, paid);
+            pay.AddPlayTime("cmr", 1800, false, paid);
+            Assert.Equal(0L, paid[1].AdShare, "police payday");
+            pay.AddPlayTime("rep", 900, false, paid);
+            Assert.Equal(1000L, paid[2].AdShare, "rep paid at their own later payday");
+            Assert.Equal(2600L + 1000L, ledger.GetBalance(Ledger.Bank("rep")));
+
+            pay.AddPlayTime("intern", 1800, true, paid);
+            Assert.Equal(3, paid.Count, "AFK intern not paid");
+            Assert.Equal(1000L, pay.MediaAdShareOwed("intern"), "share waits for the intern's payday");
+            Assert.Equal(10005L - 2000L, ledger.GetBalance(mediaTreasury));
+
+            // Next income: running-total rounding gives exactly 30% of 20,010 = 6,003 overall.
+            ledger.Mint(mediaTreasury, 10005, "ad_income");
+            pay.RecordMediaAdIncome(10005);
+            Assert.Equal(1000L + 1001L, pay.MediaAdShareOwed("intern"));
+            Assert.Equal(1001L, pay.MediaAdShareOwed("mh"));
+            Assert.Equal(0L, pay.MediaAdShareUnallocated, "3,002 new + 1 carried = 3 x 1,001");
 
             paid.Clear();
             pay.AddPlayTime("rep", 1800, false, paid);
-            Assert.Equal(0L, paid[0].AdShare, "no new ad income");
-            Assert.Equal(2600L, paid[0].Total);
+            pay.AddPlayTime("rep", 1800, false, paid);
+            Assert.Equal(1001L, paid[0].AdShare);
+            Assert.Equal(0L, paid[1].AdShare, "nothing owed until new income");
+            Assert.Equal(2600L, paid[1].Total);
+        }
+
+        [Test]
+        public static void MediaAdShareShortTreasuryCarriesOverAndLeaverForfeits()
+        {
+            ManualClock clock = new ManualClock();
+            FactionService f = NewMedia(clock);
+            Ledger ledger = new Ledger(clock);
+            ledger.Mint(Ledger.CityTreasury, 1000000, "test_setup");
+            string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
+            ledger.Mint(mediaTreasury, 30000, "ad_income");
+            PaydayService pay = new PaydayService(f, ledger);
+            pay.RecordMediaAdIncome(30000);
+            Assert.Equal(3000L, pay.MediaAdShareOwed("rep"));
+
+            // The head spends most of the treasury before rep's payday.
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("mh", ledger, Ledger.Escrow("studio"), 28800, "studio rent"));
+            List<PaydayRecord> paid = new List<PaydayRecord>();
+            pay.AddPlayTime("rep", 1800, false, paid);
+            Assert.Equal(1200L, paid[0].AdShare, "paid what the treasury holds");
+            Assert.Equal(1800L, pay.MediaAdShareOwed("rep"), "unpaid part stays owed");
+            Assert.Equal(0L, ledger.GetBalance(mediaTreasury));
+
+            ledger.Mint(mediaTreasury, 5000, "ad_income_late");
+            pay.AddPlayTime("rep", 1800, false, paid);
+            Assert.Equal(1800L, paid[1].AdShare, "carried-over share paid later");
+            Assert.Equal(0L, pay.MediaAdShareOwed("rep"));
+
+            // The intern leaves with 3,000 unpaid: it returns to the pool at the next split.
+            Assert.Equal(FactionResult.Ok, f.Leave("intern"));
+            pay.RecordMediaAdIncome(10);
+            Assert.Equal(0L, pay.MediaAdShareOwed("intern"));
+            // (3,000 forfeited + 3 new) / 2 = 1,501 each, 1 kept; mh still has their own unpaid 3,000.
+            Assert.Equal(3000L + 1501L, pay.MediaAdShareOwed("mh"));
+            Assert.Equal(1501L, pay.MediaAdShareOwed("rep"));
+            Assert.Equal(1L, pay.MediaAdShareUnallocated);
         }
     }
 }

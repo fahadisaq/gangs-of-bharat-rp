@@ -72,7 +72,11 @@ namespace GangsOfBharat.Server
 
         /// <summary>City treasury in rupees (receives the non-Mass Media share of ad fees).</summary>
         public long TreasuryRupees;
-        /// <summary>Mass Media faction fund: 50% of ad chat revenue.</summary>
+        /// <summary>
+        /// Mass Media faction fund: 50% of ad chat revenue. Temporary: the server does not use the shared
+        /// faction services yet. When they are wired in (docs/ROADMAP.md stage 4) this becomes
+        /// Ledger.FactionTreasury(FactionId.Media) plus PaydayService.RecordMediaAdIncome.
+        /// </summary>
         public long MediaFundRupees;
 
         public ServerCore(ServerConfig config, ITransport transport, ServerLog log)

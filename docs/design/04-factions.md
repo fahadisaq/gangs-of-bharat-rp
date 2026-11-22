@@ -74,7 +74,7 @@ Each power has a stable key used by the server and the faction app.
 - **A power never lets someone act outside their own unit or on a member of equal or higher rank.** For example a Captain with `recruit` hires only into their own unit and at a rank lower than their own.
 - Personal grants stay when the member is promoted or demoted and are removed when the member leaves the faction. Permission settings belong to the faction and stay when the head changes; the new head can change them.
 - **`spend_treasury` has a daily limit in ₹**, set **per rank** and optionally **per person**. A personal limit replaces the rank limit for that person. A personal `spend_treasury` grant without a personal limit uses **₹10,000 per day** (DRAFT – owner review). A rank below rank 1 that the head gives `spend_treasury` also starts with a **₹10,000 per day** limit until the head changes it (DRAFT – owner review). Limits **reset at 00:00 IST** server time. A spend that would go over the remaining daily limit is refused.
-- **Every permission change is written to the faction audit log**: who made the change, which power, which rank or person, and old value -> new value (including daily limit changes). **Every treasury spend** is logged too (who, amount, reason, remaining daily limit). The head and admins can read the audit log.
+- **Every permission change is written to the faction audit log**: who made the change, which power, which rank or person, and old value -> new value (including daily limit changes). **Every treasury spend** is logged too (who, amount, recipient, reason, remaining daily limit). A spend counts against the daily limit and is logged only after the money has actually moved; a spend the treasury cannot cover is refused and uses up nothing. The head and admins can read the audit log.
 
 ### Default permissions
 
@@ -244,7 +244,8 @@ Each Department Head leads their own department unit (see Ranks, units and chain
 ### Income
 
 - **50% of ad chat fees** and **50% of every TV, radio, billboard and paper ad sale** go to the **Mass Media treasury**. The other 50% goes to the **city treasury**.
-- Members get their **salary** (paid from the city treasury like other government factions) **plus an ad share**: at each payday, **30% of the ad income the Mass Media treasury received since the previous payday** is taken from the Mass Media treasury and **split equally among the Mass Media members paid that payday**.
+- Members get their **salary** (paid from the city treasury like other government factions) **plus an ad share**: when ad income reaches the Mass Media treasury, **30% of it is split equally among all Mass Media members at that moment** and held for each member. Each member receives what they are owed **at their own next payday** (paydays are personal 30-minute timers, so there is no shared payday). Rupees left over from the equal split wait for the next ad.
+- If the Mass Media treasury holds less than a member is owed at their payday, they get what the treasury has and **the rest stays owed** for their next payday. A member who leaves Mass Media before payday **gives up** the unpaid share; it goes back into the next split.
 
 **DRAFT – owner review**: the 30% ad share and the equal split.
 

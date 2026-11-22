@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GangsOfBharat.Shared.Gameplay.Economy;
 
 namespace GangsOfBharat.Shared.Gameplay.Factions
 {
@@ -39,6 +40,8 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
         /// report at or above the member's new rank (demotion). Reassign first.
         /// </summary>
         ReassignRequired = 24,
+        /// <summary>The faction treasury does not hold enough money for the spend.</summary>
+        InsufficientFunds = 25,
     }
 
     public sealed class FactionMember
@@ -893,17 +896,19 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
         }
 
         /// <summary>
-        /// Checks spend_treasury and the remaining daily limit, then records and audits the spend
-        /// (treasury_spend). The caller moves the money from <c>Ledger.FactionTreasury</c> only on Ok.
+        /// Spends from the actor's faction treasury in one step: checks spend_treasury, the remaining daily
+        /// limit and the treasury balance, moves the money from <c>Ledger.FactionTreasury</c> to
+        /// <paramref name="toAccount"/>, and only after a successful transfer counts the spend against the
+        /// daily limit and audits it (treasury_spend). On any failure nothing is spent or logged.
         /// </summary>
-        public FactionResult AuthorizeTreasurySpend(string actorId, long rupees, string reason)
+        public FactionResult SpendTreasury(string actorId, Ledger ledger, string toAccount, long rupees, string reason)
         {
             FactionMember actor = GetMember(actorId);
             if (actor == null)
             {
                 return FactionResult.ActorNotMember;
             }
-            if (rupees <= 0)
+            if (ledger == null || toAccount == null || toAccount.Length == 0 || rupees <= 0)
             {
                 return FactionResult.InvalidArgument;
             }
@@ -920,13 +925,23 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
             {
                 return FactionResult.LimitExceeded;
             }
+            // Ledger.Transfer is atomic and refuses to overdraw, so the limit is only spent once money moved.
+            TransferResult t = ledger.Transfer(Ledger.FactionTreasury(actor.Faction), toAccount, rupees, "faction_spend:" + reason.Trim());
+            if (t == TransferResult.InsufficientFunds)
+            {
+                return FactionResult.InsufficientFunds;
+            }
+            if (t != TransferResult.Ok)
+            {
+                return FactionResult.InvalidArgument;
+            }
             SpendDay d;
             d.Day = IstDay(_clock.UtcNow);
             d.Rupees = GetTreasurySpentToday(actorId) + rupees;
             _spentToday[actorId] = d;
             long after = GetTreasuryRemainingToday(actorId);
             Audit(actor.Faction, "treasury_spend", actorId, null,
-                "amount=" + rupees + ";reason=" + reason.Trim() + ";remaining=" + FormatLimit(after));
+                "amount=" + rupees + ";to=" + toAccount + ";reason=" + reason.Trim() + ";remaining=" + FormatLimit(after));
             return FactionResult.Ok;
         }
 
