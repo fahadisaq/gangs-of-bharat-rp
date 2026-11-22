@@ -64,9 +64,9 @@ namespace GangsOfBharat.Tests
         [Test]
         public static void FactionSlotsRanksAndSalariesMatchDesign()
         {
-            Assert.Equal(480, FactionCatalog.TotalFactionSlots, "faction slots");
+            Assert.Equal(490, FactionCatalog.TotalFactionSlots, "faction slots");
             Assert.True(FactionCatalog.TotalFactionSlots <= 1000, "fits a 1000-player server");
-            Assert.Equal(520, FactionCatalog.CivilianSlots, "civilians are the remainder");
+            Assert.Equal(510, FactionCatalog.CivilianSlots, "civilians are the remainder");
             Assert.Equal(13, FactionCatalog.All.Length);
             Assert.Equal(FactionCatalog.All.Length, FactionCatalog.All.Select(f => f.Id).Distinct().Count(), "unique ids");
             Assert.Equal(FactionCatalog.All.Length, FactionCatalog.All.Select(f => f.Key).Distinct().Count(), "unique keys");
@@ -90,7 +90,8 @@ namespace GangsOfBharat.Tests
             Assert.Equal(40, caps["hospital"]);
             Assert.Equal(20, caps["fire"]);
             Assert.Equal(25, caps["government"]);
-            Assert.Equal(20, caps["news"]);
+            Assert.Equal(30, caps["media"]);
+            Assert.Equal(6, (int)FactionId.Media, "media keeps wire value 6");
             Assert.Equal(160, FactionCatalog.All.Where(f => f.Kind == FactionKind.Gang).Sum(f => f.SlotCap), "4 gangs x 40");
             Assert.Equal(60, FactionCatalog.All.Where(f => f.Kind == FactionKind.Mafia).Sum(f => f.SlotCap), "2 families x 30");
             Assert.Equal(15, caps["court"]);
@@ -111,8 +112,11 @@ namespace GangsOfBharat.Tests
                 FactionCatalog.Get(FactionId.Fire).Ranks.Select(r => r.SalaryPerPaydayRupees), "fire salaries");
             Assert.SequenceEqual(new long[] { 13000, 9000, 7000, 2800, 2000 },
                 FactionCatalog.Get(FactionId.Government).Ranks.Select(r => r.SalaryPerPaydayRupees), "government salaries");
-            Assert.SequenceEqual(new long[] { 7000, 4000, 2800, 2000, 1200 },
-                FactionCatalog.Get(FactionId.News).Ranks.Select(r => r.SalaryPerPaydayRupees), "news salaries");
+            FactionDef media = FactionCatalog.Get(FactionId.Media);
+            Assert.SequenceEqual(new[] { 1, 4, 7, 12, 6 }, media.Ranks.Select(r => r.Count), "media rank counts");
+            Assert.SequenceEqual(new long[] { 8000, 5500, 4000, 2600, 1200 },
+                media.Ranks.Select(r => r.SalaryPerPaydayRupees), "media salaries");
+            Assert.Equal("Senior Reporter / RJ / Editor", media.Ranks[2].Name);
         }
 
         [Test]

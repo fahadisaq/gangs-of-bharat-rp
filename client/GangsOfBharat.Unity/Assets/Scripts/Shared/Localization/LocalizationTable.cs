@@ -78,7 +78,7 @@ namespace GangsOfBharat.Shared.Localization
             Add("faction.hospital", "Hospital", "अस्पताल");
             Add("faction.fire", "Fire Brigade", "अग्निशमन दल");
             Add("faction.government", "Government", "सरकार");
-            Add("faction.news", "News", "न्यूज़");
+            Add("faction.media", "Mass Media", "मास मीडिया");
             Add("faction.gang_slum", "Slum Gang", "स्लम गैंग");
             Add("faction.gang_old_city", "Old City Gang", "पुराना शहर गैंग");
             Add("faction.gang_port", "Port Gang", "पोर्ट गैंग");

@@ -99,7 +99,7 @@ namespace GangsOfBharat.Tests
             h.Step(3);
             Assert.True(reader.Heard(seller.Id, ChatChannel.Ad, "Selling Marutha Chhotu, 3L"), "ads are server-wide");
             Assert.Equal(500L, seller.Session.WalletRupees, "fee deducted");
-            Assert.Equal(250L, h.Core.NewsFundRupees, "50% to News");
+            Assert.Equal(250L, h.Core.MediaFundRupees, "50% to Mass Media");
             Assert.Equal(250L, h.Core.TreasuryRupees);
             seller.Say(ChatChannel.Ad, "Second ad");
             h.Step(3);

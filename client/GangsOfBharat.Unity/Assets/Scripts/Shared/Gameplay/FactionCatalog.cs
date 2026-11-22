@@ -11,7 +11,8 @@ namespace GangsOfBharat.Shared.Gameplay
         Hospital = 3,
         Fire = 4,
         Government = 5,
-        News = 6,
+        /// <summary>Mass Media (TV, radio, newspaper, social media, ad agency). Was News; value kept for the wire.</summary>
+        Media = 6,
         GangSlum = 7,
         GangOldCity = 8,
         GangPort = 9,
@@ -91,7 +92,7 @@ namespace GangsOfBharat.Shared.Gameplay
 
     /// <summary>
     /// Faction slots, ranks and salaries for a 1000-player server, from docs/design/04-factions.md.
-    /// Civilians are the remainder (1000 - 480 = 520).
+    /// Civilians are the remainder (1000 - 490 = 510).
     /// </summary>
     public static class FactionCatalog
     {
@@ -181,13 +182,13 @@ namespace GangsOfBharat.Shared.Gameplay
                 R(3, "officer", "Officer", 8, 2800),
                 R(4, "security", "Security", 12, 2000),
             }),
-            new FactionDef(FactionId.News, "news", FactionKind.Government, 20, new[]
+            new FactionDef(FactionId.Media, "media", FactionKind.Government, 30, new[]
             {
-                R(0, "editor", "Editor", 1, 7000),
-                R(1, "senior_reporter", "Senior Reporter", 3, 4000),
-                R(2, "reporter", "Reporter", 6, 2800),
-                R(3, "cameraman", "Cameraman", 5, 2000),
-                R(4, "intern", "Intern", 5, 1200),
+                R(0, "media_head", "Media Head", 1, 8000),
+                R(1, "department_head", "Department Head", 4, 5500),
+                R(2, "senior", "Senior Reporter / RJ / Editor", 7, 4000),
+                R(3, "reporter", "Reporter / Cameraman", 12, 2600),
+                R(4, "intern", "Intern", 6, 1200),
             }),
             // Gang names: DRAFT - owner review (one gang per city area).
             new FactionDef(FactionId.GangSlum, "gang_slum", FactionKind.Gang, 40, GangRanks()),

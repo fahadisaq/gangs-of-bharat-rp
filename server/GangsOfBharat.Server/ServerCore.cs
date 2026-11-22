@@ -70,10 +70,10 @@ namespace GangsOfBharat.Server
         private uint _tick;
         private int _handshakesThisTick;
 
-        /// <summary>City treasury in rupees (receives the non-News share of ad fees).</summary>
+        /// <summary>City treasury in rupees (receives the non-Mass Media share of ad fees).</summary>
         public long TreasuryRupees;
-        /// <summary>News faction fund: 50% of ad chat revenue.</summary>
-        public long NewsFundRupees;
+        /// <summary>Mass Media faction fund: 50% of ad chat revenue.</summary>
+        public long MediaFundRupees;
 
         public ServerCore(ServerConfig config, ITransport transport, ServerLog log)
         {
@@ -1022,9 +1022,9 @@ namespace GangsOfBharat.Server
                     {
                         long cost = _cfg.AdCostRupees;
                         s.WalletRupees -= cost;
-                        long news = cost / 2;
-                        NewsFundRupees += news;
-                        TreasuryRupees += cost - news;
+                        long media = cost / 2;
+                        MediaFundRupees += media;
+                        TreasuryRupees += cost - media;
                         _log.Info("txn", "player", s.Id, "kind", "ad_chat", "amount", -cost, "wallet", s.WalletRupees);
                         delivered = DeliverWhere(s, bytes, len, null);
                         SendSystem(s, "system.ad_charged", cost);

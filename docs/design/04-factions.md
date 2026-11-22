@@ -27,6 +27,7 @@ All salaries are in ₹ **per payday**. Payday is every **30 minutes of active p
 - **When a leader leaves or is fired, their direct reports move up** to that leader's own superior. Nobody is left without a superior. If the head leaves, the head's direct reports wait without a superior until admins pick the new head, then report to the new head.
 - A leader can **move a member between sub-units inside their own unit** (change the member's direct superior to another member of the unit, or to the leader). The new superior must have a higher rank than the moved member. Members can never be moved into or out of another leader's unit except by a leader who commands both (for example the head).
 - Promotion keeps the member's position in the chain: they still report to the same superior. If the promotion would put them at the same rank as their superior, they must first be moved to a higher superior.
+- Demotion works the same way: it is refused while one of the member's direct reports would end at the same rank as the demoted member or higher. Those reports must first be moved to another superior.
 
 Examples:
 
@@ -72,7 +73,7 @@ Each power has a stable key used by the server and the faction app.
 - **Nobody can receive a power the head does not have**, and a faction-specific power can only be given inside that faction. **`manage_permissions` can never be given** to anyone (rank or person); only the head has it.
 - **A power never lets someone act outside their own unit or on a member of equal or higher rank.** For example a Captain with `recruit` hires only into their own unit and at a rank lower than their own.
 - Personal grants stay when the member is promoted or demoted and are removed when the member leaves the faction. Permission settings belong to the faction and stay when the head changes; the new head can change them.
-- **`spend_treasury` has a daily limit in ₹**, set **per rank** and optionally **per person**. A personal limit replaces the rank limit for that person. A personal `spend_treasury` grant without a personal limit uses **₹10,000 per day** (DRAFT – owner review). Limits **reset at 00:00 IST** server time. A spend that would go over the remaining daily limit is refused.
+- **`spend_treasury` has a daily limit in ₹**, set **per rank** and optionally **per person**. A personal limit replaces the rank limit for that person. A personal `spend_treasury` grant without a personal limit uses **₹10,000 per day** (DRAFT – owner review). A rank below rank 1 that the head gives `spend_treasury` also starts with a **₹10,000 per day** limit until the head changes it (DRAFT – owner review). Limits **reset at 00:00 IST** server time. A spend that would go over the remaining daily limit is refused.
 - **Every permission change is written to the faction audit log**: who made the change, which power, which rank or person, and old value -> new value (including daily limit changes). **Every treasury spend** is logged too (who, amount, reason, remaining daily limit). The head and admins can read the audit log.
 
 ### Default permissions

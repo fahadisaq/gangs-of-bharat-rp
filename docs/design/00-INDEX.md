@@ -53,7 +53,7 @@ Related docs: [Architecture](../ARCHITECTURE.md), [Roadmap](../ROADMAP.md), [Env
 | Drugs | No drugs; generic contraband instead | [05. Justice and Crime](05-justice-and-crime.md) |
 | Bribery | Allowed as RP, logged on the server | [05. Justice and Crime](05-justice-and-crime.md) |
 | Default faction permissions | Rank 0 all powers; rank 1 all except `manage_permissions`; middle leader ranks hire/fire/promote/demote/reassign/interviews/hiring ads/mute; two lowest ranks none | [04. Factions](04-factions.md) |
-| Treasury daily limits | Rank 0 unlimited, rank 1 ₹50,000 per day, personal grant without a limit ₹10,000 per day; reset 00:00 IST | [04. Factions](04-factions.md) |
+| Treasury daily limits | Rank 0 unlimited, rank 1 ₹50,000 per day, personal grant without a limit and any other rank given `spend_treasury` ₹10,000 per day; reset 00:00 IST | [04. Factions](04-factions.md) |
 | Mass Media ad share | 30% of ad income since the previous payday, split equally among Media members paid that payday | [04. Factions](04-factions.md) |
 | Ad chat burn | Whether part of the ad chat fee is burned instead of the 50/50 Mass Media / city treasury split | [10. Communication](10-communication.md) |
 | Phone apps | Map, bank/UPI, faction, jobs, market, tickets, news (Mass Media paper), social, camera | [10. Communication](10-communication.md) |

@@ -14,8 +14,15 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
         public readonly long PaidFromTreasury;
         /// <summary>Floor top-up created from <see cref="Ledger.Source"/> when the treasury was short.</summary>
         public readonly long PaidFromFloor;
+        /// <summary>Mass Media ad share paid from the Mass Media treasury (0 for other factions).</summary>
+        public readonly long AdShare;
 
         public PaydayRecord(string characterId, FactionId faction, int rankLevel, long salary, long paidFromTreasury, long paidFromFloor)
+            : this(characterId, faction, rankLevel, salary, paidFromTreasury, paidFromFloor, 0)
+        {
+        }
+
+        public PaydayRecord(string characterId, FactionId faction, int rankLevel, long salary, long paidFromTreasury, long paidFromFloor, long adShare)
         {
             CharacterId = characterId;
             Faction = faction;
@@ -23,11 +30,27 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
             Salary = salary;
             PaidFromTreasury = paidFromTreasury;
             PaidFromFloor = paidFromFloor;
+            AdShare = adShare;
         }
 
         public long Total
         {
-            get { return PaidFromTreasury + PaidFromFloor; }
+            get { return PaidFromTreasury + PaidFromFloor + AdShare; }
+        }
+    }
+
+    /// <summary>Play time for one character in a <see cref="PaydayService.AddPlayTime(IList{PlayTimeEntry}, List{PaydayRecord})"/> batch.</summary>
+    public struct PlayTimeEntry
+    {
+        public string CharacterId;
+        public double Seconds;
+        public bool Afk;
+
+        public PlayTimeEntry(string characterId, double seconds, bool afk)
+        {
+            CharacterId = characterId;
+            Seconds = seconds;
+            Afk = afk;
         }
     }
 
@@ -40,15 +63,25 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
     /// what it has and the shortfall up to <see cref="FloorPercent"/> of the salary is created from
     /// <see cref="Ledger.Source"/> (state emergency fund). So pay never drops below the floor, and the
     /// treasury never goes negative.
+    ///
+    /// Mass Media ad share: whoever credits ad income to <c>Ledger.FactionTreasury(FactionId.Media)</c>
+    /// calls <see cref="RecordMediaAdIncome"/>. A payday is one call to AddPlayTime (the server passes
+    /// every online player's play time for a tick in one batch). When Mass Media members are paid in a
+    /// payday, <see cref="MediaAdSharePercent"/> of the ad income recorded since the previous Mass Media
+    /// payday (capped by the Mass Media treasury balance) is split equally among those paydays; the
+    /// integer remainder stays in the Mass Media treasury.
     /// </summary>
     public sealed class PaydayService
     {
         public const int DefaultFloorPercent = 50;
+        /// <summary>Share of Mass Media ad income paid out at payday. DRAFT - owner review.</summary>
+        public const int MediaAdSharePercent = 30;
 
         private readonly FactionService _factions;
         private readonly Ledger _ledger;
         private readonly Dictionary<string, double> _activeSeconds = new Dictionary<string, double>();
         private int _floorPercent = DefaultFloorPercent;
+        private long _mediaAdIncome;
 
         public PaydayService(FactionService factions, Ledger ledger)
         {
@@ -90,40 +123,103 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
             return _activeSeconds.TryGetValue(characterId, out s) ? s : 0;
         }
 
+        /// <summary>Ad income credited to the Mass Media treasury since the previous Mass Media payday.</summary>
+        public long MediaAdIncomeSincePayday
+        {
+            get { return _mediaAdIncome; }
+        }
+
+        /// <summary>Records ad income that was credited to the Mass Media treasury (for the payday ad share).</summary>
+        public void RecordMediaAdIncome(long rupees)
+        {
+            if (rupees <= 0)
+            {
+                throw new ArgumentOutOfRangeException("rupees");
+            }
+            _mediaAdIncome = rupees > long.MaxValue - _mediaAdIncome ? long.MaxValue : _mediaAdIncome + rupees;
+        }
+
         /// <summary>
         /// Adds play time for a character. AFK time is ignored. Pays once per full interval reached and
         /// appends the paydays to <paramref name="paid"/> (may be null). Returns the number of paydays.
         /// </summary>
         public int AddPlayTime(string characterId, double seconds, bool afk, List<PaydayRecord> paid)
         {
-            if (afk || seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds))
-            {
-                return 0;
-            }
-            FactionMember m = _factions.GetMember(characterId);
-            if (m == null)
-            {
-                _activeSeconds.Remove(characterId);
-                return 0;
-            }
-            _factions.MarkActive(characterId);
-            double total = ActiveSeconds(characterId) + seconds;
-            int count = 0;
-            while (total >= IntervalSeconds)
-            {
-                total -= IntervalSeconds;
-                PaydayRecord rec = Pay(m);
-                count++;
-                if (paid != null && rec != null)
-                {
-                    paid.Add(rec);
-                }
-            }
-            _activeSeconds[characterId] = total;
-            return count;
+            PlayTimeEntry[] one = new PlayTimeEntry[1];
+            one[0] = new PlayTimeEntry(characterId, seconds, afk);
+            return AddPlayTime(one, paid);
         }
 
-        private PaydayRecord Pay(FactionMember m)
+        /// <summary>
+        /// Adds play time for several characters as one payday batch (see the class summary for the Mass
+        /// Media ad share). Returns the total number of paydays.
+        /// </summary>
+        public int AddPlayTime(IList<PlayTimeEntry> entries, List<PaydayRecord> paid)
+        {
+            if (entries == null)
+            {
+                throw new ArgumentNullException("entries");
+            }
+            FactionMember[] members = new FactionMember[entries.Count];
+            int[] counts = new int[entries.Count];
+            int mediaPaydays = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                PlayTimeEntry e = entries[i];
+                if (e.Afk || e.Seconds <= 0 || double.IsNaN(e.Seconds) || double.IsInfinity(e.Seconds) || e.CharacterId == null)
+                {
+                    continue;
+                }
+                FactionMember m = _factions.GetMember(e.CharacterId);
+                if (m == null)
+                {
+                    _activeSeconds.Remove(e.CharacterId);
+                    continue;
+                }
+                _factions.MarkActive(e.CharacterId);
+                double total = ActiveSeconds(e.CharacterId) + e.Seconds;
+                int count = 0;
+                while (total >= IntervalSeconds)
+                {
+                    total -= IntervalSeconds;
+                    count++;
+                }
+                _activeSeconds[e.CharacterId] = total;
+                members[i] = m;
+                counts[i] = count;
+                if (m.Faction == FactionId.Media)
+                {
+                    mediaPaydays += count;
+                }
+            }
+
+            long sharePerPayday = 0;
+            if (mediaPaydays > 0)
+            {
+                long pool = _mediaAdIncome / 100 * MediaAdSharePercent + _mediaAdIncome % 100 * MediaAdSharePercent / 100;
+                pool = Math.Min(pool, _ledger.GetBalance(Ledger.FactionTreasury(FactionId.Media)));
+                sharePerPayday = pool / mediaPaydays;
+                _mediaAdIncome = 0;
+            }
+
+            int paydays = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                for (int k = 0; k < counts[i]; k++)
+                {
+                    long adShare = members[i].Faction == FactionId.Media ? sharePerPayday : 0;
+                    PaydayRecord rec = Pay(members[i], adShare);
+                    paydays++;
+                    if (paid != null)
+                    {
+                        paid.Add(rec);
+                    }
+                }
+            }
+            return paydays;
+        }
+
+        private PaydayRecord Pay(FactionMember m, long adShare)
         {
             FactionDef def = FactionCatalog.Get(m.Faction);
             long salary = def.Ranks[m.RankLevel].SalaryPerPaydayRupees;
@@ -132,6 +228,10 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
                 return new PaydayRecord(m.CharacterId, m.Faction, m.RankLevel, 0, 0, 0);
             }
             string bank = Ledger.Bank(m.CharacterId);
+            if (adShare > 0 && _ledger.Transfer(Ledger.FactionTreasury(m.Faction), bank, adShare, "payday_ad_share") != TransferResult.Ok)
+            {
+                adShare = 0;
+            }
             long fromTreasury = Math.Min(salary, _ledger.GetBalance(Ledger.CityTreasury));
             if (fromTreasury > 0 && _ledger.Transfer(Ledger.CityTreasury, bank, fromTreasury, "payday_salary") != TransferResult.Ok)
             {
@@ -144,8 +244,8 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
                 topUp = 0;
             }
             _factions.Audit(m.Faction, "payday", "system", m.CharacterId,
-                "treasury=" + fromTreasury + ";floor=" + topUp);
-            return new PaydayRecord(m.CharacterId, m.Faction, m.RankLevel, salary, fromTreasury, topUp);
+                "treasury=" + fromTreasury + ";floor=" + topUp + (adShare > 0 ? ";ad_share=" + adShare : ""));
+            return new PaydayRecord(m.CharacterId, m.Faction, m.RankLevel, salary, fromTreasury, topUp, adShare);
         }
     }
 }

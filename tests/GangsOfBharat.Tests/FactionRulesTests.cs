@@ -24,10 +24,11 @@ namespace GangsOfBharat.Tests
             Assert.Equal(FactionResult.Ok, f.AppointHead("admin", FactionId.Police, "cmr"));
             Assert.Equal(FactionResult.Ok, f.Hire("cmr", "insp", Inspector));
             Assert.Equal(FactionResult.Ok, f.Hire("cmr", "insp2", Inspector));
-            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "si", Si));
-            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "hc", HeadConstable));
-            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "con", Constable));
-            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "con2", Constable));
+            // The lower ranks form the inspector "insp"'s unit.
+            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "si", Si, "insp"));
+            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "hc", HeadConstable, "insp"));
+            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "con", Constable, "insp"));
+            Assert.Equal(FactionResult.Ok, f.Hire("cmr", "con2", Constable, "insp"));
             return f;
         }
 
@@ -111,7 +112,7 @@ namespace GangsOfBharat.Tests
             Assert.Equal(FactionResult.FactionFull, f.Hire("p0", "extra", Trainee), "80 slot cap");
 
             // Promotion into a full rank is rejected.
-            Assert.Equal(FactionResult.RankFull, f.Promote("dcp1", "p3_0"), "ACP seats full");
+            Assert.Equal(FactionResult.RankFull, f.Promote("p0", "p3_0"), "ACP seats full");
         }
 
         [Test]
