@@ -25,7 +25,7 @@ As recalled from Codemagic's Unity guide (not checked, the docs were unreachable
 
 The build script behaves like this:
 - With `UNITY_SERIAL` set, it activates with `-serial`, `-username` and `-password`.
-- Without it, it tries email and password only. If Unity rejects that, the build stops with the message "ACTIVATION FAILED".
+- Without it, it tries email and password only. If Unity rejects that, the build stops with the message "ACTIVATION FAILED". In that case build on your own Mac instead: see [BUILD_MAC.md](BUILD_MAC.md).
 - At the end it runs `-returnlicense` so the seat is freed.
 
 If you have Codemagic's own license steps, send them and the script will be adjusted.

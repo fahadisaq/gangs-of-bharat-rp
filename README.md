@@ -60,5 +60,6 @@ The server Dockerfile (linux/arm64 for Oracle Cloud ARM) is `server/GangsOfBhara
 - [Architecture](docs/ARCHITECTURE.md): client, server, networking, Firebase, hosting costs, scaling, security.
 - [Load test](docs/LOADTEST.md): 100 and 1000 bot results, interpretation and optimisation ideas.
 - [Roadmap](docs/ROADMAP.md): build stages from setup to Android and iOS launch, and what the project owner must provide.
-- [Android build on Codemagic](docs/BUILD_CODEMAGIC.md): free-plan APK build setup, Unity credentials as environment variables (unverified).
+- [Android build on your Mac](docs/BUILD_MAC.md): recommended free path. One pasted command builds the APK with the free Unity Personal license (unverified).
+- [Android build on Codemagic](docs/BUILD_CODEMAGIC.md): fallback, free-plan APK build setup, Unity credentials as environment variables (unverified).
 - [Environment Status](docs/ENVIRONMENT_STATUS.md): what this build sandbox can and cannot do, and how to unblock it.
