@@ -32,7 +32,7 @@ Launch target: **1 server, up to 1000 players**, Android first, then iOS.
 ## Stage 4: Factions, police and wanted
 
 - Faction hierarchy, duty and payday, all rank/salary tables, recruitment and tests.
-- Wire the shared faction rules into the server: ad chat fees credit `Ledger.FactionTreasury(Media)` (replacing `ServerCore.MediaFundRupees`, so it becomes the single Mass Media fund) and call `PaydayService.RecordMediaAdIncome`; the chat router enforces faction-chat mutes from `FactionService.MuteInFactionChat`; `sell_ads`, `go_live`, `publish_paper` and `start_convoy` gate their in-game actions; treasury spends go through `FactionService.SpendTreasury`.
+- Wire the shared faction rules into the server: ad chat fees go through `PaydayService.CreditMediaAdIncome`, which in one call locks the members' 30% ad share and credits the rest to `Ledger.FactionTreasury(Media)` (replacing `ServerCore.MediaFundRupees`, so it becomes the single Mass Media fund); the chat router enforces faction-chat mutes from `FactionService.MuteInFactionChat`; `sell_ads`, `go_live`, `publish_paper` and `start_convoy` gate their in-game actions; treasury spends go through `FactionService.SpendTreasury`.
 - Wanted 1-5, arrest, jail, court with real judges and lawyers.
 - Injury, 108 ambulance, hospital.
 - **Exit:** one full arrest -> court -> verdict cycle with real players; payday matches the tables.

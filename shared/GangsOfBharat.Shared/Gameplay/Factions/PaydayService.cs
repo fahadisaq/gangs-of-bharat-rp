@@ -14,7 +14,7 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
         public readonly long PaidFromTreasury;
         /// <summary>Floor top-up created from <see cref="Ledger.Source"/> when the treasury was short.</summary>
         public readonly long PaidFromFloor;
-        /// <summary>Mass Media ad share paid from the Mass Media treasury (0 for other factions).</summary>
+        /// <summary>Mass Media ad share paid from <see cref="PaydayService.MediaAdShareAccount"/> (0 for other factions).</summary>
         public readonly long AdShare;
 
         public PaydayRecord(string characterId, FactionId faction, int rankLevel, long salary, long paidFromTreasury, long paidFromFloor)
@@ -64,19 +64,26 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
     /// <see cref="Ledger.Source"/> (state emergency fund). So pay never drops below the floor, and the
     /// treasury never goes negative.
     ///
-    /// Mass Media ad share: whoever credits ad income to <c>Ledger.FactionTreasury(FactionId.Media)</c>
-    /// calls <see cref="RecordMediaAdIncome"/>. <see cref="MediaAdSharePercent"/> of that income is split
-    /// equally among the Mass Media members at that moment and held per member; the integer remainder is
-    /// kept for the next split. Each member receives what they are owed at their own payday (paydays are
-    /// per-player 30-minute timers, so there is no shared payday event). If the Mass Media treasury is
-    /// short, the member gets what the treasury holds and the rest stays owed. A member who leaves Mass
-    /// Media forfeits the unpaid share; it goes back into the next split.
+    /// Mass Media ad share: all ad income goes through <see cref="CreditMediaAdIncome"/>, which in one
+    /// call moves <see cref="MediaAdSharePercent"/> of it into the locked <see cref="MediaAdShareAccount"/>
+    /// and the rest into <c>Ledger.FactionTreasury(FactionId.Media)</c>. The share is split equally among
+    /// the Mass Media members at that moment and held per member; the integer remainder is kept for the
+    /// next split. Each member receives what they are owed at their own payday (paydays are per-player
+    /// 30-minute timers, so there is no shared payday event). The locked account is not the treasury, so
+    /// <see cref="FactionService.SpendTreasury"/> can never spend money members are owed. A member who
+    /// leaves Mass Media forfeits the unpaid share; it stays locked and goes back into the next split.
     /// </summary>
     public sealed class PaydayService
     {
         public const int DefaultFloorPercent = 50;
         /// <summary>Share of Mass Media ad income paid out at payday. DRAFT - owner review.</summary>
         public const int MediaAdSharePercent = 30;
+
+        /// <summary>
+        /// Locked ledger account holding Mass Media ad shares that are owed or not yet split. Only
+        /// <see cref="CreditMediaAdIncome"/> pays in and only paydays pay out.
+        /// </summary>
+        public static readonly string MediaAdShareAccount = Ledger.Escrow("media_ad_share");
 
         private readonly FactionService _factions;
         private readonly Ledger _ledger;
@@ -141,21 +148,70 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
         }
 
         /// <summary>
-        /// Records ad income that was credited to the Mass Media treasury and splits
-        /// <see cref="MediaAdSharePercent"/> of it equally among the current Mass Media members.
+        /// Takes ad income of <paramref name="rupees"/> from <paramref name="fromAccount"/> in one step:
+        /// <see cref="MediaAdSharePercent"/> goes to the locked <see cref="MediaAdShareAccount"/> and is
+        /// split equally among the current Mass Media members, the rest goes to the Mass Media treasury.
+        /// On any failure no money moves and nothing is owed.
         /// </summary>
-        public void RecordMediaAdIncome(long rupees)
+        public TransferResult CreditMediaAdIncome(string fromAccount, long rupees, string reason)
         {
             if (rupees <= 0)
             {
-                throw new ArgumentOutOfRangeException("rupees");
+                return TransferResult.InvalidAmount;
             }
-            _mediaIncomeTotal = rupees > long.MaxValue - _mediaIncomeTotal ? long.MaxValue : _mediaIncomeTotal + rupees;
+            if (string.IsNullOrEmpty(reason))
+            {
+                return TransferResult.MissingReason;
+            }
+            if (string.IsNullOrEmpty(fromAccount))
+            {
+                return TransferResult.InvalidAccount;
+            }
+            string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
+            if (fromAccount == mediaTreasury || fromAccount == MediaAdShareAccount)
+            {
+                return TransferResult.SameAccount;
+            }
+            if (fromAccount != Ledger.Source && _ledger.GetBalance(fromAccount) < rupees)
+            {
+                return TransferResult.InsufficientFunds;
+            }
+            long incomeTotal = rupees > long.MaxValue - _mediaIncomeTotal ? long.MaxValue : _mediaIncomeTotal + rupees;
             // 30% of the running total, so rounding never loses or invents rupees across many small ads.
-            long target = _mediaIncomeTotal / 100 * MediaAdSharePercent + _mediaIncomeTotal % 100 * MediaAdSharePercent / 100;
-            _mediaUnallocated += target - _mediaPoolCreated;
-            _mediaPoolCreated = target;
+            long target = incomeTotal / 100 * MediaAdSharePercent + incomeTotal % 100 * MediaAdSharePercent / 100;
+            long share = target - _mediaPoolCreated;
+            long rest = rupees - share;
 
+            if (share > 0)
+            {
+                TransferResult r = _ledger.Transfer(fromAccount, MediaAdShareAccount, share, reason + ":ad_share");
+                if (r != TransferResult.Ok)
+                {
+                    return r;
+                }
+            }
+            if (rest > 0)
+            {
+                TransferResult r = _ledger.Transfer(fromAccount, mediaTreasury, rest, reason);
+                if (r != TransferResult.Ok)
+                {
+                    if (share > 0)
+                    {
+                        // Undo the share leg so the income is all-or-nothing.
+                        _ledger.Transfer(MediaAdShareAccount, fromAccount, share, reason + ":ad_share_undo");
+                    }
+                    return r;
+                }
+            }
+            _mediaIncomeTotal = incomeTotal;
+            _mediaUnallocated += share;
+            _mediaPoolCreated = target;
+            SplitMediaAdShare();
+            return TransferResult.Ok;
+        }
+
+        private void SplitMediaAdShare()
+        {
             List<string> media = new List<string>();
             foreach (FactionMember m in _factions.GetMembers())
             {
@@ -273,15 +329,14 @@ namespace GangsOfBharat.Shared.Gameplay.Factions
             long adShare = 0;
             if (m.Faction == FactionId.Media)
             {
-                string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
-                adShare = Math.Min(MediaAdShareOwed(m.CharacterId), _ledger.GetBalance(mediaTreasury));
-                if (adShare > 0 && _ledger.Transfer(mediaTreasury, bank, adShare, "payday_ad_share") != TransferResult.Ok)
+                // The locked account always holds every owed share; the Min is only a guard.
+                adShare = Math.Min(MediaAdShareOwed(m.CharacterId), _ledger.GetBalance(MediaAdShareAccount));
+                if (adShare > 0 && _ledger.Transfer(MediaAdShareAccount, bank, adShare, "payday_ad_share") != TransferResult.Ok)
                 {
                     adShare = 0;
                 }
                 if (adShare > 0)
                 {
-                    // Only what was actually paid leaves the owed balance; a short treasury carries the rest over.
                     _mediaOwed[m.CharacterId] = MediaAdShareOwed(m.CharacterId) - adShare;
                 }
             }

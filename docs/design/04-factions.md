@@ -245,7 +245,8 @@ Each Department Head leads their own department unit (see Ranks, units and chain
 
 - **50% of ad chat fees** and **50% of every TV, radio, billboard and paper ad sale** go to the **Mass Media treasury**. The other 50% goes to the **city treasury**.
 - Members get their **salary** (paid from the city treasury like other government factions) **plus an ad share**: when ad income reaches the Mass Media treasury, **30% of it is split equally among all Mass Media members at that moment** and held for each member. Each member receives what they are owed **at their own next payday** (paydays are personal 30-minute timers, so there is no shared payday). Rupees left over from the equal split wait for the next ad.
-- If the Mass Media treasury holds less than a member is owed at their payday, they get what the treasury has and **the rest stays owed** for their next payday. A member who leaves Mass Media before payday **gives up** the unpaid share; it goes back into the next split.
+- **Members' ad shares are locked.** The 30% is set aside the moment the ad income arrives, in the same step, and is kept apart from the Mass Media treasury. The Media Head and anyone with `spend_treasury` can only spend the other 70%, so spending can never cut into what members are owed, and every member is paid their full share at payday.
+- A member who leaves Mass Media before payday **gives up** the unpaid share; it stays locked and goes back into the next split.
 
 **DRAFT – owner review**: the 30% ad share and the equal split.
 

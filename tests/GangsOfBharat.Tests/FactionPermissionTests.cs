@@ -454,11 +454,16 @@ namespace GangsOfBharat.Tests
             Ledger ledger = new Ledger(clock);
             ledger.Mint(Ledger.CityTreasury, 1000000, "test_setup");
             string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
-            ledger.Mint(mediaTreasury, 10005, "ad_income");
+            string advertiser = Ledger.Bank("advertiser");
+            ledger.Mint(advertiser, 20010, "test_setup");
             PaydayService pay = new PaydayService(f, ledger);
-            pay.RecordMediaAdIncome(10005);
+            Assert.Equal(TransferResult.Ok, pay.CreditMediaAdIncome(advertiser, 10005, "ad_chat"));
 
-            // 30% of 10,005 = 3,001; split among the 3 Media members = 1,000 each; 1 kept for the next split.
+            // 30% of 10,005 = 3,001 is locked; the treasury gets the other 7,004 in the same call.
+            Assert.Equal(10005L, ledger.GetBalance(advertiser));
+            Assert.Equal(3001L, ledger.GetBalance(PaydayService.MediaAdShareAccount));
+            Assert.Equal(7004L, ledger.GetBalance(mediaTreasury));
+            // Split among the 3 Media members = 1,000 each; 1 kept for the next split.
             Assert.Equal(1000L, pay.MediaAdShareOwed("mh"));
             Assert.Equal(1000L, pay.MediaAdShareOwed("rep"));
             Assert.Equal(1000L, pay.MediaAdShareOwed("intern"));
@@ -482,11 +487,12 @@ namespace GangsOfBharat.Tests
             pay.AddPlayTime("intern", 1800, true, paid);
             Assert.Equal(3, paid.Count, "AFK intern not paid");
             Assert.Equal(1000L, pay.MediaAdShareOwed("intern"), "share waits for the intern's payday");
-            Assert.Equal(10005L - 2000L, ledger.GetBalance(mediaTreasury));
+            Assert.Equal(3001L - 2000L, ledger.GetBalance(PaydayService.MediaAdShareAccount));
+            Assert.Equal(7004L, ledger.GetBalance(mediaTreasury), "ad shares never come out of the treasury");
 
             // Next income: running-total rounding gives exactly 30% of 20,010 = 6,003 overall.
-            ledger.Mint(mediaTreasury, 10005, "ad_income");
-            pay.RecordMediaAdIncome(10005);
+            Assert.Equal(TransferResult.Ok, pay.CreditMediaAdIncome(advertiser, 10005, "ad_chat"));
+            Assert.Equal(7004L + 7003L, ledger.GetBalance(mediaTreasury));
             Assert.Equal(1000L + 1001L, pay.MediaAdShareOwed("intern"));
             Assert.Equal(1001L, pay.MediaAdShareOwed("mh"));
             Assert.Equal(0L, pay.MediaAdShareUnallocated, "3,002 new + 1 carried = 3 x 1,001");
@@ -500,39 +506,75 @@ namespace GangsOfBharat.Tests
         }
 
         [Test]
-        public static void MediaAdShareShortTreasuryCarriesOverAndLeaverForfeits()
+        public static void MediaAdShareLockedFromHeadSpendingAndLeaverForfeits()
         {
             ManualClock clock = new ManualClock();
             FactionService f = NewMedia(clock);
             Ledger ledger = new Ledger(clock);
             ledger.Mint(Ledger.CityTreasury, 1000000, "test_setup");
             string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
-            ledger.Mint(mediaTreasury, 30000, "ad_income");
+            string advertiser = Ledger.Bank("advertiser");
+            ledger.Mint(advertiser, 30010, "test_setup");
             PaydayService pay = new PaydayService(f, ledger);
-            pay.RecordMediaAdIncome(30000);
+            Assert.Equal(TransferResult.Ok, pay.CreditMediaAdIncome(advertiser, 30000, "ad_chat"));
             Assert.Equal(3000L, pay.MediaAdShareOwed("rep"));
+            Assert.Equal(9000L, ledger.GetBalance(PaydayService.MediaAdShareAccount));
+            Assert.Equal(21000L, ledger.GetBalance(mediaTreasury));
 
-            // The head spends most of the treasury before rep's payday.
-            Assert.Equal(FactionResult.Ok, f.SpendTreasury("mh", ledger, Ledger.Escrow("studio"), 28800, "studio rent"));
+            // The head (unlimited daily limit) cannot reach the 9,000 members are owed.
+            Assert.Equal(FactionResult.InsufficientFunds, f.SpendTreasury("mh", ledger, Ledger.Escrow("studio"), 21001, "studio rent"));
+            Assert.Equal(FactionResult.Ok, f.SpendTreasury("mh", ledger, Ledger.Escrow("studio"), 21000, "studio rent"));
+            Assert.Equal(0L, ledger.GetBalance(mediaTreasury));
+            Assert.Equal(9000L, ledger.GetBalance(PaydayService.MediaAdShareAccount), "shares untouched by the spend");
+
             List<PaydayRecord> paid = new List<PaydayRecord>();
             pay.AddPlayTime("rep", 1800, false, paid);
-            Assert.Equal(1200L, paid[0].AdShare, "paid what the treasury holds");
-            Assert.Equal(1800L, pay.MediaAdShareOwed("rep"), "unpaid part stays owed");
-            Assert.Equal(0L, ledger.GetBalance(mediaTreasury));
-
-            ledger.Mint(mediaTreasury, 5000, "ad_income_late");
-            pay.AddPlayTime("rep", 1800, false, paid);
-            Assert.Equal(1800L, paid[1].AdShare, "carried-over share paid later");
+            Assert.Equal(3000L, paid[0].AdShare, "full share paid with an empty treasury");
             Assert.Equal(0L, pay.MediaAdShareOwed("rep"));
 
-            // The intern leaves with 3,000 unpaid: it returns to the pool at the next split.
+            // The intern leaves with 3,000 unpaid: it stays locked and returns to the pool at the next split.
             Assert.Equal(FactionResult.Ok, f.Leave("intern"));
-            pay.RecordMediaAdIncome(10);
+            Assert.Equal(TransferResult.Ok, pay.CreditMediaAdIncome(advertiser, 10, "ad_chat"));
             Assert.Equal(0L, pay.MediaAdShareOwed("intern"));
             // (3,000 forfeited + 3 new) / 2 = 1,501 each, 1 kept; mh still has their own unpaid 3,000.
             Assert.Equal(3000L + 1501L, pay.MediaAdShareOwed("mh"));
             Assert.Equal(1501L, pay.MediaAdShareOwed("rep"));
             Assert.Equal(1L, pay.MediaAdShareUnallocated);
+            Assert.Equal(4501L + 1501L + 1L, ledger.GetBalance(PaydayService.MediaAdShareAccount), "locked balance covers every owed share");
+            Assert.Equal(7L, ledger.GetBalance(mediaTreasury));
+        }
+
+        [Test]
+        public static void MediaAdIncomeIsAllOrNothing()
+        {
+            ManualClock clock = new ManualClock();
+            FactionService f = NewMedia(clock);
+            Ledger ledger = new Ledger(clock);
+            string mediaTreasury = Ledger.FactionTreasury(FactionId.Media);
+            string advertiser = Ledger.Bank("advertiser");
+            ledger.Mint(advertiser, 500, "test_setup");
+            PaydayService pay = new PaydayService(f, ledger);
+            int txBefore = ledger.TransactionCount;
+
+            Assert.Equal(TransferResult.InsufficientFunds, pay.CreditMediaAdIncome(advertiser, 501, "ad_chat"));
+            Assert.Equal(TransferResult.InvalidAmount, pay.CreditMediaAdIncome(advertiser, 0, "ad_chat"));
+            Assert.Equal(TransferResult.MissingReason, pay.CreditMediaAdIncome(advertiser, 100, ""));
+            Assert.Equal(TransferResult.InvalidAccount, pay.CreditMediaAdIncome(null, 100, "ad_chat"));
+            Assert.Equal(TransferResult.SameAccount, pay.CreditMediaAdIncome(mediaTreasury, 100, "ad_chat"));
+            Assert.Equal(TransferResult.SameAccount, pay.CreditMediaAdIncome(PaydayService.MediaAdShareAccount, 100, "ad_chat"));
+            Assert.Equal(txBefore, ledger.TransactionCount, "no money moved");
+            Assert.Equal(500L, ledger.GetBalance(advertiser));
+            Assert.Equal(0L, pay.MediaAdShareOwed("rep"));
+            Assert.Equal(0L, pay.MediaAdShareUnallocated);
+
+            // Small ads: the running total keeps the locked share at exactly 30% overall.
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Equal(TransferResult.Ok, pay.CreditMediaAdIncome(advertiser, 1, "ad_chat"));
+            }
+            Assert.Equal(3L, ledger.GetBalance(PaydayService.MediaAdShareAccount));
+            Assert.Equal(7L, ledger.GetBalance(mediaTreasury));
+            Assert.Equal(1L, pay.MediaAdShareOwed("rep"));
         }
     }
 }
