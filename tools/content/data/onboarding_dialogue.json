@@ -1,0 +1,39 @@
+{
+  "id": "onboarding_intro",
+  "title": "Intro: arrival in Mayanagri",
+  "source": "docs/design/03-story.md",
+  "status": "DRAFT – owner review",
+  "notes": "English lines are the source. Empty 'hi' fields are filled by tools/content/sarvam_dialogue.py (Sarvam translate) and must be reviewed by a Hindi speaker before TTS recording. Lines with Devanagari already written come from the design doc. 'Pandey chacha' is a draft name.",
+  "speakers": {
+    "announcer": {"name": "Station announcer", "voice": {"en": "manisha", "hi": "manisha"}},
+    "player": {"name": "Player", "voice": {"en": "karun", "hi": "karun"}},
+    "thief": {"name": "Bag thief", "voice": {"en": "hitesh", "hi": "hitesh"}},
+    "vendor": {"name": "Chai vendor", "voice": {"en": "abhilash", "hi": "abhilash"}},
+    "chacha": {"name": "Pandey chacha", "voice": {"en": "abhilash", "hi": "abhilash"}},
+    "police": {"name": "Police officer", "voice": {"en": "karun", "hi": "karun"}},
+    "business": {"name": "Business family elder", "voice": {"en": "vidya", "hi": "vidya"}},
+    "gang": {"name": "Gang member", "voice": {"en": "hitesh", "hi": "hitesh"}}
+  },
+  "lines": [
+    {"id": "intro_b1_001", "beat": 1, "speaker": "announcer", "en": "The local train has arrived at Mayanagri Central, platform number three.", "hi": ""},
+    {"id": "intro_b1_002", "beat": 1, "speaker": "player", "en": "Five hundred rupees and one bag. That is all I have. This city will change my life.", "hi": ""},
+    {"id": "intro_b2_001", "beat": 2, "speaker": "thief", "en": "Nice bag. Thank you!", "hi": ""},
+    {"id": "intro_b2_002", "beat": 2, "speaker": "player", "en": "Someone stole my bag! Everything I had was in it.", "hi": "किसी ने मेरा बैग चुरा लिया! मेरा सब कुछ उसी में था।"},
+    {"id": "intro_b2_003", "beat": 2, "speaker": "player", "en": "Stop! Somebody stop that thief!", "hi": ""},
+    {"id": "intro_b2_004", "beat": 2, "speaker": "player", "en": "Gone. Only the money in my pocket is left.", "hi": ""},
+    {"id": "intro_b3_001", "beat": 3, "speaker": "vendor", "en": "One cutting chai and a vada pav, twenty rupees. You look hungry, friend.", "hi": ""},
+    {"id": "intro_b3_002", "beat": 3, "speaker": "vendor", "en": "If you need a bed for the night, ask at the chawl behind the temple.", "hi": ""},
+    {"id": "intro_b4_001", "beat": 4, "speaker": "chacha", "en": "Welcome to Mayanagri, son. This city never sleeps, and it never forgives.", "hi": "मायानगरी में स्वागत है, बेटा। ये शहर कभी सोता नहीं, और कभी माफ़ नहीं करता।"},
+    {"id": "intro_b4_002", "beat": 4, "speaker": "chacha", "en": "You can sleep at my place tonight. Tomorrow we will see what you can do.", "hi": ""},
+    {"id": "intro_b4_003", "beat": 4, "speaker": "chacha", "en": "Keep your phone close. The map, your messages and your friends are all in there.", "hi": ""},
+    {"id": "intro_b5_001", "beat": 5, "speaker": "chacha", "en": "Take my auto for today. Drive carefully and bring it back in one piece.", "hi": "आज के लिए मेरा ऑटो ले जा। ध्यान से चलाना और सही-सलामत वापस लाना।"},
+    {"id": "intro_b5_002", "beat": 5, "speaker": "chacha", "en": "Watch the fuel. An empty auto earns nothing.", "hi": ""},
+    {"id": "intro_b5_003", "beat": 5, "speaker": "player", "en": "My first fare in Mayanagri. Not bad at all.", "hi": ""},
+    {"id": "intro_b6_001", "beat": 6, "speaker": "police", "en": "Mayanagri needs honest people in uniform. Think about it.", "hi": "मायानगरी को वर्दी में ईमानदार लोग चाहिए। सोचना ज़रूर।"},
+    {"id": "intro_b6_002", "beat": 6, "speaker": "business", "en": "Money makes money. Work for us and you will see.", "hi": "पैसा पैसे को खींचता है। हमारे साथ काम करो, खुद देख लोगे।"},
+    {"id": "intro_b6_003", "beat": 6, "speaker": "gang", "en": "The police won't feed you. We look after our own.", "hi": "पुलिस तुझे खाना नहीं खिलाएगी। हम अपनों का ख्याल रखते हैं।"},
+    {"id": "intro_b6_004", "beat": 6, "speaker": "chacha", "en": "Police, business families and gangs. Everyone will want you on their side.", "hi": ""},
+    {"id": "intro_b7_001", "beat": 7, "speaker": "chacha", "en": "This city gives everyone a chance. What you become is your choice.", "hi": ""},
+    {"id": "intro_b7_002", "beat": 7, "speaker": "player", "en": "Wait, that is the man who stole my bag!", "hi": ""}
+  ]
+}

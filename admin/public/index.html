@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GANGS OF BHARAT - Admin Panel (mock)</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>GANGS OF BHARAT Admin</h1>
+    <span id="whoami">Not signed in</span>
+  </header>
+
+  <form id="login">
+    <label>Panel token <input id="token" type="password" autocomplete="off" required></label>
+    <label>Admin code <input id="code" placeholder="ADM-27" required></label>
+    <button type="submit">Sign in</button>
+  </form>
+
+  <nav>
+    <a href="#players">Live players</a>
+    <a href="#tickets">Tickets</a>
+    <a href="#bans">Bans</a>
+    <a href="#economy">Economy charts</a>
+    <a href="#store">Store control</a>
+    <a href="#factions">Faction leaders and permissions</a>
+    <a href="#events">Event scheduler</a>
+    <a href="#log">Admin logs</a>
+    <a href="#admins">Admins</a>
+  </nav>
+
+  <main>
+    <section id="page"></section>
+
+    <section id="action-box">
+      <h2>Take action</h2>
+      <p>Every action needs a reason and is written to the admin log. You can act only on players and on admins at a lower level.</p>
+      <form id="action">
+        <label>Action <select id="action-name"></select></label>
+        <label>Target (player, ticket or admin code) <input id="action-target"></label>
+        <label>New level (set_admin_level only) <input id="action-level" type="number" min="1" max="6"></label>
+        <label>Reason <textarea id="action-reason" required minlength="5" maxlength="500"></textarea></label>
+        <button type="submit">Submit</button>
+      </form>
+      <p id="action-result"></p>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

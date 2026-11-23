@@ -1,0 +1,39 @@
+# Note: .agents/ is intentionally NOT ignored.
+
+# .NET build output
+bin/
+obj/
+*.user
+.vs/
+
+# Unity generated folders
+client/GangsOfBharat.Unity/Library/
+client/GangsOfBharat.Unity/Temp/
+client/GangsOfBharat.Unity/Logs/
+client/GangsOfBharat.Unity/UserSettings/
+client/GangsOfBharat.Unity/Build/
+client/GangsOfBharat.Unity/Builds/
+client/GangsOfBharat.Unity/obj/
+
+# Mobile build artifacts
+*.apk
+*.aab
+*.ipa
+
+# Secrets (never commit real keys)
+.env
+.env.*
+!.env.example
+secrets.local.json
+config/secrets*.json
+
+# Content pipeline output
+tools/content/out/
+
+# Python
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Local Kiro agent permissions (machine-specific)
+.kiro/settings/

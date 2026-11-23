@@ -1,0 +1,159 @@
+rules_version = '2';
+
+// GANGS OF BHARAT Firestore rules (UNVERIFIED: not deployed or emulated yet).
+//
+// Principle: the authoritative game server and Cloud Functions use the Admin SDK,
+// which bypasses these rules. Clients may only read their own data and change a
+// few harmless settings. Everything that holds value (currency, inventory,
+// houses, vehicles, transactions, faction membership, faction permissions,
+// purchases) is server-only: "allow write: if false".
+// Anything not matched below is denied by default.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Only these profile fields may be changed by the player.
+    // Currency (cash, bank, coins), VIP, bans and stats are server-only.
+    function onlySettingsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['language', 'settings']);
+    }
+
+    // Player profile: read own; update only language and settings.
+    match /players/{uid} {
+      allow read: if isSelf(uid);
+      allow update: if isSelf(uid) && onlySettingsChanged();
+      allow create, delete: if false;
+    }
+
+    // One character per server (DRAFT - owner review). Server-only.
+    match /characters/{characterId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Value-holding collections: read own, never written by clients.
+    match /inventories/{characterId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /vehicles_owned/{vehicleId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /houses/{houseId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /businesses/{businessId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /transactions/{txId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /auctions/{auctionId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /purchases/{purchaseId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // The game server sets the "faction" custom claim (faction key, or absent
+    // for civilians) through the Admin SDK whenever membership changes.
+    function inFaction(factionKey) {
+      return signedIn() && request.auth.token.faction == factionKey;
+    }
+
+    // Factions: public summary for everyone signed in. The member list (rank,
+    // superiorId chain) is visible only to members of the same faction, so
+    // rival gangs and police cannot read each other's org charts.
+    match /factions/{factionKey} {
+      allow read: if signedIn();
+      allow write: if false;
+
+      match /members/{characterId} {
+        allow read: if inFaction(factionKey);
+        allow write: if false;
+      }
+    }
+
+    // Rank powers, personal grants and treasury daily limits. Readable only by
+    // members of the same faction; changed only by the game server after it
+    // checks manage_permissions in game.
+    match /faction_permissions/{factionKey} {
+      allow read: if inFaction(factionKey);
+      allow write: if false;
+    }
+
+    match /faction_audit/{entryId} {
+      allow read, write: if false;
+    }
+
+    // Mass Media ads: published by the server after the fee is paid in game.
+    match /media_ads/{adId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Support tickets: a player may open a ticket for themselves with a short
+    // message. Status, assignment and replies are server-only.
+    match /tickets/{ticketId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isSelf(request.resource.data.uid)
+        && request.resource.data.keys().hasOnly(['uid', 'category', 'message', 'createdAt'])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Chat metadata (limited): the player's own block list and muted channels.
+    // Chat messages themselves never go through Firestore.
+    match /chat_settings/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['blocked', 'mutedChannels'])
+        && request.resource.data.blocked is list
+        && request.resource.data.blocked.size() <= 200
+        && request.resource.data.mutedChannels is list
+        && request.resource.data.mutedChannels.size() <= 16;
+    }
+
+    // Reports are created by the game server with 2 minutes of evidence.
+    match /reports/{reportId} {
+      allow read, write: if false;
+    }
+
+    match /bans/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
+    match /admin_log/{entryId} {
+      allow read, write: if false;
+    }
+
+    // Default deny for everything else.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
