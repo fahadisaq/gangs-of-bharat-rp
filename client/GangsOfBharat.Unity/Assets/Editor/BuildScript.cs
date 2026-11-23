@@ -1,18 +1,61 @@
 // UNVERIFIED: written offline, never compiled against the real UnityEditor.
-// Called from codemagic.yaml with: -executeMethod GangsOfBharat.EditorTools.BuildScript.BuildAndroid
+// Local fallback (scripts/build-android-mac.sh): -executeMethod GangsOfBharat.EditorTools.BuildScript.BuildAndroid
+// Unity Build Automation: set the pre-export method to GangsOfBharat.EditorTools.BuildScript.PreExport (UBA runs the build itself).
 // Optional arguments: -outputPath <file.apk>  (default build/Android/GangsOfBharat.apk under the repo root)
 using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace GangsOfBharat.EditorTools
 {
     public static class BuildScript
     {
         private const string DefaultOutput = "build/Android/GangsOfBharat.apk";
+        private const string BootstrapScenePath = "Assets/Scenes/Bootstrap.unity";
+        private const string DefaultPackageName = "com.gangsofbharat.rp";
+        private const string DefaultVersion = "0.1.0";
+
+        // Unity Build Automation pre-export method. Does not call BuildPipeline: UBA builds the player itself.
+        // Optional env vars (set in the UBA build configuration): GOB_VERSION, GOB_BUNDLE_CODE, GOB_PACKAGE_NAME.
+        public static void PreExport()
+        {
+            PlayerSettings.SetApplicationIdentifier(
+                NamedBuildTarget.Android,
+                Environment.GetEnvironmentVariable("GOB_PACKAGE_NAME") ?? DefaultPackageName);
+            PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("GOB_VERSION") ?? DefaultVersion;
+            if (int.TryParse(Environment.GetEnvironmentVariable("GOB_BUNDLE_CODE"), out int code))
+            {
+                PlayerSettings.Android.bundleVersionCode = code;
+            }
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            EditorUserBuildSettings.buildAppBundle = false;
+            EnsureScene();
+            AssetDatabase.SaveAssets();
+            Debug.Log("PreExport done: " + PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android)
+                + " v" + PlayerSettings.bundleVersion);
+        }
+
+        // If Build Settings has no enabled scene, create an empty bootstrap scene so the player can be built.
+        private static void EnsureScene()
+        {
+            if (EditorBuildSettings.scenes.Any(s => s.enabled))
+            {
+                return;
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(BootstrapScenePath));
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            EditorSceneManager.SaveScene(scene, BootstrapScenePath);
+            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(BootstrapScenePath, true) };
+            Debug.Log("No scene in Build Settings; created " + BootstrapScenePath);
+        }
 
         public static void BuildAndroid()
         {

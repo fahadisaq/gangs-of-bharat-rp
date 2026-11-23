@@ -1,6 +1,6 @@
 # Build the Android APK on your Mac (free)
 
-This is the recommended free path. It uses the free Unity Personal license on your own Mac, so no Codemagic license is needed. The build script is unverified until it has run once on a real Unity install.
+This is an optional local fallback, not the recommended path. The recommended path is [Unity Build Automation](BUILD_UNITY_CLOUD.md). This one uses the free Unity Personal license on your own Mac. The build script is unverified until it has run once on a real Unity install.
 
 ## Prerequisites
 
