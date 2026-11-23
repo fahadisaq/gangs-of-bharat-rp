@@ -37,10 +37,32 @@ namespace GangsOfBharat.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             EditorUserBuildSettings.buildAppBundle = false;
+            EnableBothInputHandlers();
             EnsureScene();
             AssetDatabase.SaveAssets();
             Debug.Log("PreExport done: " + PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android)
                 + " v" + PlayerSettings.bundleVersion);
+        }
+
+        // The repo has no ProjectSettings.asset, so Unity defaults to the old Input Manager and the
+        // Input System code would get no input. 2 = "Both". There is no public API for this setting.
+        private static void EnableBothInputHandlers()
+        {
+            UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+            if (assets.Length == 0)
+            {
+                Debug.LogWarning("PreExport: ProjectSettings.asset not found; input handler left unchanged.");
+                return;
+            }
+            var settings = new SerializedObject(assets[0]);
+            SerializedProperty handler = settings.FindProperty("activeInputHandler");
+            if (handler == null)
+            {
+                Debug.LogWarning("PreExport: activeInputHandler property not found; input handler left unchanged.");
+                return;
+            }
+            handler.intValue = 2;
+            settings.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // If Build Settings has no enabled scene, create an empty bootstrap scene so the player can be built.
