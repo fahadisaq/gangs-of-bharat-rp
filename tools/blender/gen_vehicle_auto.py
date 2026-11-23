@@ -18,6 +18,8 @@ import random
 import sys
 from pathlib import Path
 
+OUT_SUFFIXES = (".fbx", ".glb")
+
 KINDS = ("auto", "hatchback")
 
 # Parody names shown on the body (custom property "model_name").
@@ -51,8 +53,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=1, help="random seed")
     parser.add_argument("--out", type=Path, default=Path("out/vehicle.glb"))
     args = parser.parse_args(argv)
-    if args.out.suffix.lower() != ".glb":
-        parser.error("--out must end with .glb")
+    if args.out.suffix.lower() not in OUT_SUFFIXES:
+        parser.error("--out must end with .fbx or .glb")
     return args
 
 
@@ -106,6 +108,11 @@ def build_parts(kind: str, seed: int) -> dict:
 def _material(bpy, name: str, colour) -> object:
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     mat.diffuse_color = colour
+    # Exporters read the Principled BSDF base colour, not diffuse_color.
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    if bsdf is not None:
+        bsdf.inputs["Base Color"].default_value = colour
     return mat
 
 
@@ -128,6 +135,8 @@ def build_scene(bpy, parts: dict) -> None:
     roof.scale = parts["roof"]["size"]
     roof.data.materials.append(canvas)
     roof.parent = body
+    # Keep the roof where it is in world space instead of inheriting the body's scale.
+    roof.matrix_parent_inverse = body.matrix_world.inverted()
 
     for w in parts["wheels"]:
         bpy.ops.mesh.primitive_cylinder_add(
@@ -143,9 +152,19 @@ def build_scene(bpy, parts: dict) -> None:
         # Wheels stay separate objects (not joined) so they can rotate in Unity.
 
 
-def export_glb(bpy, out: Path) -> None:
+def export_model(bpy, out: Path) -> None:
+    """Exports .fbx (Unity imports it natively) or .glb (needs a glTF importer in Unity)."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    bpy.ops.export_scene.gltf(filepath=str(out), export_format="GLB")
+    if out.suffix.lower() == ".fbx":
+        bpy.ops.export_scene.fbx(
+            filepath=str(out),
+            apply_scale_options="FBX_SCALE_UNITS",
+            axis_forward="-Z",
+            axis_up="Y",
+            use_custom_props=True,
+        )
+    else:
+        bpy.ops.export_scene.gltf(filepath=str(out), export_format="GLB", export_extras=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -154,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     import bpy  # only available inside Blender
 
     build_scene(bpy, parts)
-    export_glb(bpy, args.out)
+    export_model(bpy, args.out)
     print(f"wrote {args.out} ({parts['kind']}, {parts['model_name']})")
     return 0
 

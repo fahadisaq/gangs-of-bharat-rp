@@ -40,7 +40,7 @@ def test_city_block_rejects_bad_style_and_suffix():
     with pytest.raises(SystemExit):
         gen_city_block.parse_args(["--style", "skyscraper"])
     with pytest.raises(SystemExit):
-        gen_city_block.parse_args(["--out", "block.fbx"])
+        gen_city_block.parse_args(["--out", "block.obj"])
 
 
 @pytest.mark.parametrize("style", gen_city_block.STYLES)
@@ -80,3 +80,11 @@ def test_vehicle_args_and_parts():
     assert auto["model_name"] in gen_vehicle_auto.PARODY_NAMES["auto"]
     with pytest.raises(ValueError, match="unknown kind"):
         gen_vehicle_auto.build_parts("truck", 1)
+
+
+def test_fbx_and_glb_outputs_accepted():
+    assert gen_city_block.parse_args(["--out", "a.fbx"]).out == Path("a.fbx")
+    assert gen_vehicle_auto.parse_args(["--out", "a.FBX"]).out == Path("a.FBX")
+    assert gen_vehicle_auto.parse_args(["--out", "a.glb"]).out == Path("a.glb")
+    with pytest.raises(SystemExit):
+        gen_vehicle_auto.parse_args(["--out", "a.obj"])

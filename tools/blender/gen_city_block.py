@@ -3,7 +3,7 @@
 Builds one city block of Mayanagri: chawl buildings with balconies, shop fronts
 with sign planes, roads with sidewalks, street poles and overhead wires. Each
 building gets an LOD0 mesh (balconies, shop details) and an LOD1 mesh (plain box).
-The result is exported as one .glb file.
+The result is exported as one .fbx (for Unity) or .glb file.
 
 Run headless:
     blender -b -P gen_city_block.py -- --seed 1 --style chawl --out out/block.glb
@@ -18,6 +18,8 @@ import argparse
 import random
 import sys
 from pathlib import Path
+
+OUT_SUFFIXES = (".fbx", ".glb")
 
 STYLES = ("chawl", "market", "oldcity")
 
@@ -73,8 +75,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--style", choices=STYLES, default="chawl")
     parser.add_argument("--out", type=Path, default=Path("out/block.glb"))
     args = parser.parse_args(argv)
-    if args.out.suffix.lower() != ".glb":
-        parser.error("--out must end with .glb")
+    if args.out.suffix.lower() not in OUT_SUFFIXES:
+        parser.error("--out must end with .fbx or .glb")
     return args
 
 
@@ -133,6 +135,11 @@ def build_plan(seed: int, style: str) -> dict:
 def _material(bpy, name: str, colour) -> object:
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     mat.diffuse_color = colour
+    # Exporters read the Principled BSDF base colour, not diffuse_color.
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    if bsdf is not None:
+        bsdf.inputs["Base Color"].default_value = colour
     return mat
 
 
@@ -212,9 +219,19 @@ def build_scene(bpy, plan: dict) -> None:
              ((a + b) / 2, pole_y, POLE_HEIGHT - 0.4), metal, street)
 
 
-def export_glb(bpy, out: Path) -> None:
+def export_model(bpy, out: Path) -> None:
+    """Exports .fbx (Unity imports it natively) or .glb (needs a glTF importer in Unity)."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    bpy.ops.export_scene.gltf(filepath=str(out), export_format="GLB")
+    if out.suffix.lower() == ".fbx":
+        bpy.ops.export_scene.fbx(
+            filepath=str(out),
+            apply_scale_options="FBX_SCALE_UNITS",
+            axis_forward="-Z",
+            axis_up="Y",
+            use_custom_props=True,
+        )
+    else:
+        bpy.ops.export_scene.gltf(filepath=str(out), export_format="GLB", export_extras=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -223,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
     import bpy  # only available inside Blender
 
     build_scene(bpy, plan)
-    export_glb(bpy, args.out)
+    export_model(bpy, args.out)
     print(f"wrote {args.out} ({len(plan['buildings'])} buildings, style {args.style})")
     return 0
 

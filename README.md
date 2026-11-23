@@ -61,5 +61,6 @@ The server Dockerfile (linux/arm64 for Oracle Cloud ARM) is `server/GangsOfBhara
 - [Load test](docs/LOADTEST.md): 100 and 1000 bot results, interpretation and optimisation ideas.
 - [Roadmap](docs/ROADMAP.md): build stages from setup to Android and iOS launch, and what the project owner must provide.
 - [Android build on Unity Build Automation](docs/BUILD_UNITY_CLOUD.md): recommended path. Cloud APK build with the free monthly minutes, no Mac needed (unverified).
+- [Content generator notebook](notebooks/GangsOfBharat_Content.ipynb): runs in Google Colab, makes the Sarvam voices, Gemini art and Blender 3D models, and pushes them to the `content/first-batch` branch (unverified). Rebuild it with `python3 scripts/make_colab_notebook.py`.
 - [Android build on your Mac](docs/BUILD_MAC.md): optional local fallback (unverified).
 - [Environment Status](docs/ENVIRONMENT_STATUS.md): what this build sandbox can and cannot do, and how to unblock it.
