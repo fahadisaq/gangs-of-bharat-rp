@@ -1,0 +1,79 @@
+# Builds the Unity client for Android on Codemagic. UNVERIFIED: written offline, never run.
+# Setup steps: docs/BUILD_CODEMAGIC.md
+# Credentials live only in the Codemagic variable group "unity_credentials":
+#   UNITY_EMAIL, UNITY_PASSWORD (secure), UNITY_SERIAL (secure, optional).
+# Never put credentials in this file.
+# Known risk: Codemagic's Unity guide reportedly requires a Plus/Pro serial for cloud builds.
+# A free Personal license is tied to one machine, so email/password-only activation may fail.
+workflows:
+  unity-android:
+    name: Unity Android APK
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      groups:
+        - unity_credentials
+      vars:
+        UNITY_VERSION: "6000.0.32f1" # keep in sync with ProjectSettings/ProjectVersion.txt
+        UNITY_PROJECT: client/GangsOfBharat.Unity
+        # Uncomment to sign with a release keystore (also add the secure vars below to a group):
+        #   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+        # and upload the keystore under Codemagic > Team settings > Code signing identities > Android,
+        # or base64 it into a secure var ANDROID_KEYSTORE_BASE64.
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    # Manual starts are always possible from the Codemagic UI ("Start new build").
+    scripts:
+      - name: Check Unity shared copy is up to date
+        script: scripts/sync-shared-to-unity.sh --check
+
+      - name: Locate Unity and activate license
+        script: |
+          set -euo pipefail
+          UNITY_BIN="/Applications/Unity/Hub/Editor/${UNITY_VERSION}/Unity.app/Contents/MacOS/Unity"
+          if [ ! -x "$UNITY_BIN" ]; then
+            echo "Unity ${UNITY_VERSION} not found at $UNITY_BIN. Installed editors:"
+            ls /Applications/Unity/Hub/Editor/ || true
+            echo "Install it (Unity Hub CLI) or change UNITY_VERSION." >&2
+            exit 1
+          fi
+          echo "UNITY_BIN=$UNITY_BIN" >> "$CM_ENV"
+          if [ -n "${UNITY_SERIAL:-}" ]; then
+            "$UNITY_BIN" -batchmode -quit -nographics -logFile - \
+              -serial "$UNITY_SERIAL" -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD"
+          else
+            echo "UNITY_SERIAL not set, trying email/password-only activation."
+            if ! "$UNITY_BIN" -batchmode -quit -nographics -logFile - \
+                -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD"; then
+              echo "ACTIVATION FAILED: no UNITY_SERIAL and email/password-only activation was rejected." >&2
+              echo "A free Personal license is tied to one machine. Add a Plus/Pro UNITY_SERIAL to the unity_credentials group." >&2
+              exit 1
+            fi
+          fi
+
+      - name: Build Android APK
+        script: |
+          set -euo pipefail
+          # Uncomment together with the signing vars above to use a release keystore:
+          # echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/release.keystore"
+          # export ANDROID_KEYSTORE_PATH="$CM_BUILD_DIR/release.keystore"
+          "$UNITY_BIN" -batchmode -quit -nographics -logFile - \
+            -projectPath "$CM_BUILD_DIR/$UNITY_PROJECT" \
+            -buildTarget Android \
+            -executeMethod GangsOfBharat.EditorTools.BuildScript.BuildAndroid \
+            -outputPath "$CM_BUILD_DIR/build/Android/GangsOfBharat.apk"
+          ls -l "$CM_BUILD_DIR/build/Android"
+
+      - name: Return Unity license
+        ignore_failure: true
+        script: |
+          if [ -n "${UNITY_BIN:-}" ]; then
+            "$UNITY_BIN" -batchmode -quit -nographics -logFile - -returnlicense || true
+          fi
+    artifacts:
+      - build/Android/*.apk
