@@ -64,12 +64,14 @@ The source script is never overwritten. Machine-translated lines get `"hi_source
 ```json
 {
   "id": "onboarding_intro",
-  "speakers": {"chacha": {"name": "Pandey chacha", "voice": {"en": "abhilash", "hi": "abhilash"}}},
+  "speakers": {"chacha": {"name": "Pandey chacha", "voice": {"en": "shubh", "hi": "shubh"}}},
   "lines": [
     {"id": "intro_b4_001", "beat": 4, "speaker": "chacha", "en": "Welcome to Mayanagri, son.", "hi": ""}
   ]
 }
 ```
+
+Speaker names must be valid for the TTS model in `TTS_MODEL`, currently `bulbul:v3`. **`bulbul:v2` is deprecated and the API now rejects it**, and v2 speaker names (`manisha`, `karun`, `hitesh`, `abhilash`, `vidya`) are not accepted by v3. The 37 valid v3 speakers are: aditya, ritu, ashutosh, priya, neha, rahul, pooja, rohan, simran, kavya, amit, dev, ishita, shreya, ratan, varun, manan, sumit, roopa, kabir, aayan, shubh, advait, anand, tanya, tarun, sunny, mani, gokul, vijay, shruti, suhani, mohit, kavitha, rehan, soham, rupali. A wrong name returns HTTP 400 listing the valid set.
 
 Line ids must be unique, every line needs English text and a known speaker, and `hi` may be empty (it is then translated). `data/onboarding_dialogue.json` holds the intro from `docs/design/03-story.md` (DRAFT, owner review).
 

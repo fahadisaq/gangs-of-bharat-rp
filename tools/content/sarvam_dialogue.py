@@ -56,7 +56,7 @@ AUTH_HEADER = "api-subscription-key"
 
 # Verify against current Sarvam docs.
 TRANSLATE_MODEL = "mayura:v1"
-TTS_MODEL = "bulbul:v2"
+TTS_MODEL = "bulbul:v3"
 STT_MODEL = "saarika:v2"
 TTS_SAMPLE_RATE = 22050
 TTS_MAX_CHARS = 1500

@@ -1,0 +1,301 @@
+{
+  "id": "onboarding_intro",
+  "title": "Intro: arrival in Mayanagri",
+  "source": "docs/design/03-story.md",
+  "status": "DRAFT – owner review",
+  "notes": "English lines are the source. Empty 'hi' fields are filled by tools/content/sarvam_dialogue.py (Sarvam translate) and must be reviewed by a Hindi speaker before TTS recording. Lines with Devanagari already written come from the design doc. 'Pandey chacha' is a draft name.",
+  "speakers": {
+    "announcer": {
+      "name": "Station announcer",
+      "voice": {
+        "en": "shruti",
+        "hi": "shruti"
+      }
+    },
+    "player": {
+      "name": "Player",
+      "voice": {
+        "en": "aditya",
+        "hi": "aditya"
+      }
+    },
+    "thief": {
+      "name": "Bag thief",
+      "voice": {
+        "en": "rahul",
+        "hi": "rahul"
+      }
+    },
+    "vendor": {
+      "name": "Chai vendor",
+      "voice": {
+        "en": "shubh",
+        "hi": "shubh"
+      }
+    },
+    "chacha": {
+      "name": "Pandey chacha",
+      "voice": {
+        "en": "shubh",
+        "hi": "shubh"
+      }
+    },
+    "police": {
+      "name": "Police officer",
+      "voice": {
+        "en": "aditya",
+        "hi": "aditya"
+      }
+    },
+    "business": {
+      "name": "Business family elder",
+      "voice": {
+        "en": "roopa",
+        "hi": "roopa"
+      }
+    },
+    "gang": {
+      "name": "Gang member",
+      "voice": {
+        "en": "rahul",
+        "hi": "rahul"
+      }
+    }
+  },
+  "lines": [
+    {
+      "id": "intro_b1_001",
+      "beat": 1,
+      "speaker": "announcer",
+      "en": "The local train has arrived at Mayanagri Central, platform number three.",
+      "hi": "Local train Mayanagri Central, platform number three पर arrive हो गई है।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b1_001.en.wav",
+        "hi": "onboarding_intro/intro_b1_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b1_002",
+      "beat": 1,
+      "speaker": "player",
+      "en": "Five hundred rupees and one bag. That is all I have. This city will change my life.",
+      "hi": "पाँच सौ rupees और एक bag. बस इतना ही मेरे पास है। यह city मेरी life change कर देगा।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b1_002.en.wav",
+        "hi": "onboarding_intro/intro_b1_002.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b2_001",
+      "beat": 2,
+      "speaker": "thief",
+      "en": "Nice bag. Thank you!",
+      "hi": "Nice bag है। Thank you!",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b2_001.en.wav",
+        "hi": "onboarding_intro/intro_b2_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b2_002",
+      "beat": 2,
+      "speaker": "player",
+      "en": "Someone stole my bag! Everything I had was in it.",
+      "hi": "किसी ने मेरा बैग चुरा लिया! मेरा सब कुछ उसी में था।",
+      "audio": {
+        "en": "onboarding_intro/intro_b2_002.en.wav",
+        "hi": "onboarding_intro/intro_b2_002.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b2_003",
+      "beat": 2,
+      "speaker": "player",
+      "en": "Stop! Somebody stop that thief!",
+      "hi": "रुको! अरे, किसी ने उस thief को रोको!",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b2_003.en.wav",
+        "hi": "onboarding_intro/intro_b2_003.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b2_004",
+      "beat": 2,
+      "speaker": "player",
+      "en": "Gone. Only the money in my pocket is left.",
+      "hi": "चला गया। मेरी pocket में सिर्फ़ पैसे बचे हैं।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b2_004.en.wav",
+        "hi": "onboarding_intro/intro_b2_004.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b3_001",
+      "beat": 3,
+      "speaker": "vendor",
+      "en": "One cutting chai and a vada pav, twenty rupees. You look hungry, friend.",
+      "hi": "एक cutting chai और एक vada pav, twenty rupees. यार, भूख लगी है क्या?",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b3_001.en.wav",
+        "hi": "onboarding_intro/intro_b3_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b3_002",
+      "beat": 3,
+      "speaker": "vendor",
+      "en": "If you need a bed for the night, ask at the chawl behind the temple.",
+      "hi": "अगर आपको रात के लिए bed चाहिए, तो temple के पीछे वाले chawl में पूछ लीजिए।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b3_002.en.wav",
+        "hi": "onboarding_intro/intro_b3_002.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b4_001",
+      "beat": 4,
+      "speaker": "chacha",
+      "en": "Welcome to Mayanagri, son. This city never sleeps, and it never forgives.",
+      "hi": "मायानगरी में स्वागत है, बेटा। ये शहर कभी सोता नहीं, और कभी माफ़ नहीं करता।",
+      "audio": {
+        "en": "onboarding_intro/intro_b4_001.en.wav",
+        "hi": "onboarding_intro/intro_b4_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b4_002",
+      "beat": 4,
+      "speaker": "chacha",
+      "en": "You can sleep at my place tonight. Tomorrow we will see what you can do.",
+      "hi": "आप आज रात मेरे घर पर सो सकते हैं। कल देखते हैं क्या कर सकते हैं।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b4_002.en.wav",
+        "hi": "onboarding_intro/intro_b4_002.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b4_003",
+      "beat": 4,
+      "speaker": "chacha",
+      "en": "Keep your phone close. The map, your messages and your friends are all in there.",
+      "hi": "अपना phone पास रखिए। Map, आपके messages और आपके friends सब वहाँ हैं।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b4_003.en.wav",
+        "hi": "onboarding_intro/intro_b4_003.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b5_001",
+      "beat": 5,
+      "speaker": "chacha",
+      "en": "Take my auto for today. Drive carefully and bring it back in one piece.",
+      "hi": "आज के लिए मेरा ऑटो ले जा। ध्यान से चलाना और सही-सलामत वापस लाना।",
+      "audio": {
+        "en": "onboarding_intro/intro_b5_001.en.wav",
+        "hi": "onboarding_intro/intro_b5_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b5_002",
+      "beat": 5,
+      "speaker": "chacha",
+      "en": "Watch the fuel. An empty auto earns nothing.",
+      "hi": "Fuel देखो। Empty auto से कुछ नहीं होता।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b5_002.en.wav",
+        "hi": "onboarding_intro/intro_b5_002.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b5_003",
+      "beat": 5,
+      "speaker": "player",
+      "en": "My first fare in Mayanagri. Not bad at all.",
+      "hi": "Mayanagri में मेरा first fare। बिल्कुल भी bad नहीं।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b5_003.en.wav",
+        "hi": "onboarding_intro/intro_b5_003.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b6_001",
+      "beat": 6,
+      "speaker": "police",
+      "en": "Mayanagri needs honest people in uniform. Think about it.",
+      "hi": "मायानगरी को वर्दी में ईमानदार लोग चाहिए। सोचना ज़रूर।",
+      "audio": {
+        "en": "onboarding_intro/intro_b6_001.en.wav",
+        "hi": "onboarding_intro/intro_b6_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b6_002",
+      "beat": 6,
+      "speaker": "business",
+      "en": "Money makes money. Work for us and you will see.",
+      "hi": "पैसा पैसे को खींचता है। हमारे साथ काम करो, खुद देख लोगे।",
+      "audio": {
+        "en": "onboarding_intro/intro_b6_002.en.wav",
+        "hi": "onboarding_intro/intro_b6_002.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b6_003",
+      "beat": 6,
+      "speaker": "gang",
+      "en": "The police won't feed you. We look after our own.",
+      "hi": "पुलिस तुझे खाना नहीं खिलाएगी। हम अपनों का ख्याल रखते हैं।",
+      "audio": {
+        "en": "onboarding_intro/intro_b6_003.en.wav",
+        "hi": "onboarding_intro/intro_b6_003.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b6_004",
+      "beat": 6,
+      "speaker": "chacha",
+      "en": "Police, business families and gangs. Everyone will want you on their side.",
+      "hi": "Police, business families और gangs. सब लोग आपसे अपने side में चाहते होंगे।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b6_004.en.wav",
+        "hi": "onboarding_intro/intro_b6_004.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b7_001",
+      "beat": 7,
+      "speaker": "chacha",
+      "en": "This city gives everyone a chance. What you become is your choice.",
+      "hi": "यह city सबको chance देती है। आप क्या बनते हैं, वो आपकी choice है।",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b7_001.en.wav",
+        "hi": "onboarding_intro/intro_b7_001.hi.wav"
+      }
+    },
+    {
+      "id": "intro_b7_002",
+      "beat": 7,
+      "speaker": "player",
+      "en": "Wait, that is the man who stole my bag!",
+      "hi": "Wait, वही आदमी है जिसने मेरा bag चुराया था!",
+      "hi_source": "sarvam-machine-translation (needs Hindi speaker review)",
+      "audio": {
+        "en": "onboarding_intro/intro_b7_002.en.wav",
+        "hi": "onboarding_intro/intro_b7_002.hi.wav"
+      }
+    }
+  ]
+}

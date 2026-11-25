@@ -5,14 +5,14 @@
   "status": "DRAFT – owner review",
   "notes": "English lines are the source. Empty 'hi' fields are filled by tools/content/sarvam_dialogue.py (Sarvam translate) and must be reviewed by a Hindi speaker before TTS recording. Lines with Devanagari already written come from the design doc. 'Pandey chacha' is a draft name.",
   "speakers": {
-    "announcer": {"name": "Station announcer", "voice": {"en": "manisha", "hi": "manisha"}},
-    "player": {"name": "Player", "voice": {"en": "karun", "hi": "karun"}},
-    "thief": {"name": "Bag thief", "voice": {"en": "hitesh", "hi": "hitesh"}},
-    "vendor": {"name": "Chai vendor", "voice": {"en": "abhilash", "hi": "abhilash"}},
-    "chacha": {"name": "Pandey chacha", "voice": {"en": "abhilash", "hi": "abhilash"}},
-    "police": {"name": "Police officer", "voice": {"en": "karun", "hi": "karun"}},
-    "business": {"name": "Business family elder", "voice": {"en": "vidya", "hi": "vidya"}},
-    "gang": {"name": "Gang member", "voice": {"en": "hitesh", "hi": "hitesh"}}
+    "announcer": {"name": "Station announcer", "voice": {"en": "shruti", "hi": "shruti"}},
+    "player": {"name": "Player", "voice": {"en": "aditya", "hi": "aditya"}},
+    "thief": {"name": "Bag thief", "voice": {"en": "rahul", "hi": "rahul"}},
+    "vendor": {"name": "Chai vendor", "voice": {"en": "shubh", "hi": "shubh"}},
+    "chacha": {"name": "Pandey chacha", "voice": {"en": "shubh", "hi": "shubh"}},
+    "police": {"name": "Police officer", "voice": {"en": "aditya", "hi": "aditya"}},
+    "business": {"name": "Business family elder", "voice": {"en": "roopa", "hi": "roopa"}},
+    "gang": {"name": "Gang member", "voice": {"en": "rahul", "hi": "rahul"}}
   },
   "lines": [
     {"id": "intro_b1_001", "beat": 1, "speaker": "announcer", "en": "The local train has arrived at Mayanagri Central, platform number three.", "hi": ""},
