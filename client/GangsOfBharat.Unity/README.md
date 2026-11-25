@@ -60,11 +60,15 @@ The .NET solution (`GangsOfBharat.sln`) does not compile the Unity copy: no proj
 | `FirebaseBootstrap.cs` | Sign-in flow, guarded by the `FIREBASE_SDK` define |
 | `AgeGate.cs` | 18+ confirmation before login |
 | `JobHud.cs` | Taxi and food delivery jobs: start buttons, waypoint marker, distance, pay result |
+| `DialoguePlayer.cs` | Voiced intro dialogue with IMGUI subtitles (speaker + text in EN or Hindi), tap to advance, Skip, EN / हिंदी toggle, Story button to replay. Script: `Assets/Localization/Dialogue/onboarding_intro.json`, clips: `Assets/Audio/Dialogue/onboarding_intro/<line id>.<en\|hi>.wav` |
+| `SplashScreenOverlay.cs` | Full-screen loading image (aspect fill) with the title for 2.5 s, then a fade; the intro dialogue waits for it |
 
 ### Known TODOs
 
 - **Opus voice**: `VoiceChat` uses a placeholder 8 kHz mu-law codec (64 kbps). Add [Concentus](https://github.com/lostromb/concentus) (pure C# Opus port, works with IL2CPP) or a native libopus plugin and implement `IVoiceCodec` with it (about 16 kbps).
 - **Firebase**: import the Firebase Unity SDK (Auth, Firestore, Analytics, Crashlytics), add `google-services.json` / `GoogleService-Info.plist`, a Google Sign-In plugin and a Sign in with Apple plugin, then add `FIREBASE_SDK` to **Player > Scripting Define Symbols**. Without it the client uses a development token that the server accepts only when started with its dev-token option.
+- **Hindi subtitles in IMGUI**: `DialoguePlayer` draws with IMGUI and the device font. IMGUI does not shape Devanagari, so conjuncts and some matras show as separate glyphs. Acceptable for the test build; the real HUD should use a shaping-capable text renderer.
+- **Generated content in the test scene**: `TestSceneBuilder` adds the intro dialogue, shop sign quads, the worn asphalt road texture and the splash screen only when those files exist (from `tools/content/build_all.py`). Missing files are skipped.
 - **Hindi text**: add Noto Sans Devanagari as a TextMeshPro font asset (fallback for the main font) and check conjunct shaping on a device. TextMeshPro has limited complex-script shaping, so a HarfBuzz-based text plugin may be needed for correct Hindi rendering.
 - **Scenes and prefabs**: no scene exists yet. A bootstrap scene needs one GameObject each with `NetClient`, `LanguageSettings`, `FirebaseBootstrap`, `AgeGate` (with its panel), a player root with `ClientPrediction`, `PlayerController`, `VehicleController`, `VoiceChat`, an `EntityInterpolator` with player and vehicle prefabs (indexed by vehicle catalog id), the Cinemachine cameras with `CameraRig`, and a HUD canvas with `ChatUI` and `JobHud`.
 
