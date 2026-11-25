@@ -55,6 +55,7 @@ The server Dockerfile (linux/arm64 for Oracle Cloud ARM) is `server/GangsOfBhara
 
 ## Documentation
 
+- [Master blueprint](docs/BLUEPRINT.md) ([PDF](docs/GangsOfBharat_Blueprint.pdf)): the whole game on one page, what is built, and the plan to finish, followed by every design chapter.
 - [Game Design Document](docs/design/00-INDEX.md): 17 chapters covering vision, city, story, factions, justice, events, economy, market, injury, communication, monetization, admin, tech, art/audio, extras, legal and roadmap. Open items are labelled "DRAFT – owner review".
 - [Game Design Document (PDF)](docs/GangsOfBharat_GDD.pdf): generated offline with `python3 tools/docs/md2pdf.py --out docs/GangsOfBharat_GDD.pdf docs/design/*.md`. Hindi lines are only in the Markdown.
 - [Architecture](docs/ARCHITECTURE.md): client, server, networking, Firebase, hosting costs, scaling, security.
