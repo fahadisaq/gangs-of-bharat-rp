@@ -1,6 +1,12 @@
 // Generates Assets/Scenes/TestDistrict.unity from code (called by BuildScript.PreExport when
 // Build Settings has no enabled scene). Everything is primitives plus any FBX found under
 // Assets/Art/Models/City (Block_*.fbx) and Assets/Art/Models/Vehicles (*.fbx).
+// Optional generated content (tools/content/build_all.py), each used only if present:
+//   Assets/Localization/Dialogue/onboarding_intro.json + Assets/Audio/Dialogue/onboarding_intro/<id>.<en|hi>.wav
+//       -> "IntroDialogue" (DialoguePlayer, plays on start)
+//   Assets/Art/Generated/shop_sign/*.png       -> 4:1 sign quads on the shop-house facades
+//   Assets/Art/Generated/road_texture/worn_indian_city_asphalt*.png -> tiled road surface
+//   Assets/Art/Generated/loading_screen/*.png  -> SplashScreenOverlay for 2.5 s before the intro
 // Menu: Gangs of Bharat > Generate Test District (regenerates the scene in the editor).
 // UNVERIFIED: written against Unity 6 editor APIs, compiled only against stubs in the sandbox.
 using System;
@@ -20,6 +26,15 @@ namespace GangsOfBharat.EditorTools
         private const string MaterialFolder = "Assets/Scenes/TestDistrictMaterials";
         private const string CityModelFolder = "Assets/Art/Models/City";
         private const string VehicleModelFolder = "Assets/Art/Models/Vehicles";
+        private const string DialoguePath = "Assets/Localization/Dialogue/onboarding_intro.json";
+        private const string VoiceFolder = "Assets/Audio/Dialogue/onboarding_intro";
+        private const string ShopSignFolder = "Assets/Art/Generated/shop_sign";
+        private const string RoadTextureFolder = "Assets/Art/Generated/road_texture";
+        private const string LoadingScreenFolder = "Assets/Art/Generated/loading_screen";
+        // File name prefixes from tools/content/content_common.slugify of the gemini_art.py subjects.
+        private const string WornAsphaltPrefix = "worn_indian_city_asphalt";
+        private const string PreferredLoadingPrefix = "the_mayanagri_skyline";
+        private const float SplashSeconds = 2.5f;
 
         // The shared Movement code clamps positions to WorldBounds (0..8192 m), so the district
         // is built around a positive origin, not (0, 0, 0).
@@ -39,6 +54,20 @@ namespace GangsOfBharat.EditorTools
 
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
         private static Shader _shader;
+        private static List<Texture2D> _signTextures = new List<Texture2D>();
+        private static int _signCount;
+
+        [Serializable]
+        private sealed class DialogueIds
+        {
+            public DialogueId[] lines;
+        }
+
+        [Serializable]
+        private sealed class DialogueId
+        {
+            public string id;
+        }
 
         /// <summary>
         /// Returns the TestDistrict scene path, generating and saving the scene if the file does
@@ -87,11 +116,15 @@ namespace GangsOfBharat.EditorTools
             }
 
             SetupLighting(sun);
+            _signTextures = LoadTextures(ShopSignFolder);
+            _signCount = 0;
             BuildStreet();
             PlaceCityModels();
             GameObject car = BuildCar("TestCar", Origin + new Vector3(-2.5f, 0f, -4f));
             PlaceVehicleModels();
             BuildPlayer(camera, car);
+            float splash = BuildSplashScreen();
+            BuildIntroDialogue(splash);
 
             AssetDatabase.SaveAssets();
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -177,6 +210,28 @@ namespace GangsOfBharat.EditorTools
             return mat;
         }
 
+        // Mat() plus an albedo texture with tiling (white tint so the texture shows unchanged).
+        private static Material TexturedMat(string name, Texture2D texture, Vector2 tiling)
+        {
+            Material mat = Mat(name, Color.white);
+            if (mat == null || texture == null)
+            {
+                return mat;
+            }
+            if (mat.HasProperty("_MainTex"))
+            {
+                mat.SetTexture("_MainTex", texture);
+                mat.SetTextureScale("_MainTex", tiling);
+            }
+            if (mat.HasProperty("_BaseMap"))
+            {
+                mat.SetTexture("_BaseMap", texture);
+                mat.SetTextureScale("_BaseMap", tiling);
+            }
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
         private static void Paint(GameObject go, Material mat)
         {
             if (mat == null)
@@ -250,8 +305,9 @@ namespace GangsOfBharat.EditorTools
             Prim(PrimitiveType.Plane, "Ground", street, Vector3.zero, new Vector3(40f, 1f, 40f),
                 Mat("Ground", new Color(0.56f, 0.50f, 0.40f)));
             Material asphalt = Mat("Asphalt", new Color(0.17f, 0.17f, 0.19f));
-            Box("MainRoad", street, new Vector3(0f, 0.02f, 0f), new Vector3(10f, 0.04f, 300f), asphalt);
-            Box("CrossRoad", street, new Vector3(0f, 0.025f, 40f), new Vector3(300f, 0.04f, 10f), asphalt);
+            GameObject mainRoad = Box("MainRoad", street, new Vector3(0f, 0.02f, 0f), new Vector3(10f, 0.04f, 300f), asphalt);
+            GameObject crossRoad = Box("CrossRoad", street, new Vector3(0f, 0.025f, 40f), new Vector3(300f, 0.04f, 10f), asphalt);
+            ApplyRoadTexture(street, mainRoad, crossRoad);
 
             Material paint = Mat("LanePaint", new Color(0.95f, 0.95f, 0.90f));
             for (float z = -140f; z <= 140f; z += 8f)
@@ -302,6 +358,7 @@ namespace GangsOfBharat.EditorTools
                 int awning = (colour + 3) % FacadeColors.Length;
                 Box("Awning", building, new Vector3(-side * (depth * 0.5f + 0.6f), 3.2f, 0f),
                     new Vector3(1.2f, 0.15f, width - 2f), Mat("Facade" + awning, FacadeColors[awning]));
+                AddShopSign(building, side, depth, width);
 
                 if (rng.NextDouble() < 0.5)
                 {
@@ -335,6 +392,165 @@ namespace GangsOfBharat.EditorTools
                         new Vector3(3f, 2.6f, 3f), leaves);
                 }
             }
+        }
+
+        // ---------------------------------------------------------------- generated art
+
+        // Textures (png/jpg) in a folder, sorted by path. Empty if the folder does not exist.
+        private static List<Texture2D> LoadTextures(string folder)
+        {
+            List<Texture2D> textures = new List<Texture2D>();
+            if (!AssetDatabase.IsValidFolder(folder))
+            {
+                return textures;
+            }
+            List<string> paths = new List<string>();
+            foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { folder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                string ext = Path.GetExtension(path).ToLowerInvariant();
+                if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+                {
+                    paths.Add(path);
+                }
+            }
+            paths.Sort(StringComparer.Ordinal);
+            foreach (string path in paths)
+            {
+                Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (texture != null)
+                {
+                    textures.Add(texture);
+                }
+            }
+            return textures;
+        }
+
+        private static Texture2D FindByPrefix(List<Texture2D> textures, string prefix)
+        {
+            foreach (Texture2D texture in textures)
+            {
+                if (texture.name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return texture;
+                }
+            }
+            return null;
+        }
+
+        // A 4:1 sign quad above the awning on the road-facing facade, cycling through the shop_sign images.
+        private static void AddShopSign(Transform building, float side, float depth, float width)
+        {
+            if (_signTextures.Count == 0 || _shader == null)
+            {
+                return;
+            }
+            int i = _signCount % _signTextures.Count;
+            _signCount++;
+            Texture2D texture = _signTextures[i];
+            float signWidth = Mathf.Min(width - 2f, 6f);
+            float signHeight = signWidth / 4f;
+            // A quad shows its texture towards local -Z; yaw side * 90 turns that towards the road.
+            GameObject sign = Prim(PrimitiveType.Quad, "ShopSign", building,
+                new Vector3(-side * (depth * 0.5f + 0.03f), 3.45f + signHeight * 0.5f, 0f),
+                new Vector3(signWidth, signHeight, 1f), TexturedMat("Sign_" + texture.name, texture, Vector2.one));
+            sign.transform.localRotation = Quaternion.Euler(0f, side * 90f, 0f);
+        }
+
+        // Worn asphalt image (if generated) on planes laid over the road boxes. Planes have
+        // known UVs (u along x, v along z, 10 m per unit scale), so tiling is one repeat per 5 m.
+        private static void ApplyRoadTexture(Transform street, GameObject mainRoad, GameObject crossRoad)
+        {
+            Texture2D texture = FindByPrefix(LoadTextures(RoadTextureFolder), WornAsphaltPrefix);
+            if (texture == null || _shader == null)
+            {
+                return;
+            }
+            Prim(PrimitiveType.Plane, "MainRoadSurface", street, new Vector3(0f, 0.042f, 0f),
+                new Vector3(1f, 1f, 30f), TexturedMat("AsphaltMain", texture, new Vector2(2f, 60f)));
+            Prim(PrimitiveType.Plane, "CrossRoadSurface", street, new Vector3(0f, 0.047f, 40f),
+                new Vector3(30f, 1f, 1f), TexturedMat("AsphaltCross", texture, new Vector2(60f, 2f)));
+            // Keep the boxes (and their colliders), hide their untextured tops.
+            foreach (GameObject road in new[] { mainRoad, crossRoad })
+            {
+                Renderer renderer = road.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.enabled = false;
+                }
+            }
+            Debug.Log("TestSceneBuilder: road texture " + texture.name);
+        }
+
+        // Returns the splash duration in seconds, or 0 if there is no loading_screen image.
+        private static float BuildSplashScreen()
+        {
+            List<Texture2D> images = LoadTextures(LoadingScreenFolder);
+            if (images.Count == 0)
+            {
+                return 0f;
+            }
+            Texture2D image = FindByPrefix(images, PreferredLoadingPrefix) ?? images[0];
+            GameObject go = new GameObject("SplashScreen");
+            go.AddComponent<SplashScreenOverlay>().Configure(image, "GANGS OF BHARAT", SplashSeconds);
+            Debug.Log("TestSceneBuilder: splash screen " + image.name);
+            return SplashSeconds;
+        }
+
+        // ---------------------------------------------------------------- intro dialogue
+
+        private static void BuildIntroDialogue(float splashSeconds)
+        {
+            if (!File.Exists(DialoguePath))
+            {
+                return;
+            }
+            TextAsset script = AssetDatabase.LoadAssetAtPath<TextAsset>(DialoguePath);
+            if (script == null)
+            {
+                Debug.LogWarning("TestSceneBuilder: " + DialoguePath + " exists but is not imported as a TextAsset.");
+                return;
+            }
+            DialogueIds parsed = null;
+            try
+            {
+                parsed = JsonUtility.FromJson<DialogueIds>(script.text);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("TestSceneBuilder: cannot parse " + DialoguePath + ": " + e.Message);
+            }
+            List<string> ids = new List<string>();
+            if (parsed != null && parsed.lines != null)
+            {
+                foreach (DialogueId line in parsed.lines)
+                {
+                    if (line != null && !string.IsNullOrEmpty(line.id))
+                    {
+                        ids.Add(line.id);
+                    }
+                }
+            }
+            AudioClip[] en = new AudioClip[ids.Count];
+            AudioClip[] hi = new AudioClip[ids.Count];
+            int clips = 0;
+            for (int i = 0; i < ids.Count; i++)
+            {
+                en[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(VoiceFolder + "/" + ids[i] + ".en.wav");
+                hi[i] = AssetDatabase.LoadAssetAtPath<AudioClip>(VoiceFolder + "/" + ids[i] + ".hi.wav");
+                clips += (en[i] != null ? 1 : 0) + (hi[i] != null ? 1 : 0);
+            }
+
+            GameObject go = new GameObject("IntroDialogue");
+            AudioSource audio = go.AddComponent<AudioSource>();
+            audio.playOnAwake = false;
+            audio.spatialBlend = 0f;
+            go.AddComponent<LanguageSettings>(); // saved language or device language on start
+            DialoguePlayer player = go.AddComponent<DialoguePlayer>();
+            // DialoguePlayer also waits while SplashScreenOverlay.Showing; the delay is a short pause after it.
+            player.Configure(script, ids.ToArray(), en, hi, true, splashSeconds > 0f ? 0.3f : 1f);
+            EditorUtility.SetDirty(player);
+            Debug.Log("TestSceneBuilder: intro dialogue with " + ids.Count + " lines and " + clips + " voice clips");
         }
 
         // ---------------------------------------------------------------- vehicle
