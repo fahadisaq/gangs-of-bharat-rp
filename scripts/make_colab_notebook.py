@@ -93,41 +93,14 @@ run(["git", "config", "user.email", "colab@users.noreply.github.com"], cwd=WORK)
 print("Repository ready.")
 '''
 
-SARVAM_MD = """## Step 1: Sarvam, intro story voices
+BLENDER_MD = """## Step 1: download Blender
 
-Translates the English lines that have no Hindi yet, then records all 20 intro lines in English and Hindi (about 54 Sarvam calls). Machine-translated Hindi is marked for review by a Hindi speaker.
-"""
-
-SARVAM = r'''run(
-    [
-        "python3", "tools/content/sarvam_dialogue.py",
-        "--mode", "dialogue",
-        "--script", "tools/content/data/onboarding_dialogue.json",
-        "--languages", "en,hi",
-    ],
-    cwd=WORK,
-    step="sarvam dialogue",
-)
-'''
-
-GEMINI_MD = """## Step 2: Gemini, signs, textures, icons and loading screens
-
-About 20 images. If Gemini says the image model needs billing or a quota is used up, this step fails and the rest still runs.
-"""
-
-GEMINI = r'''for preset in ("shop_sign", "road_texture", "ui_icon", "loading_screen"):
-    run(["python3", "tools/content/gemini_art.py", "--preset", preset], cwd=WORK, step=f"gemini {preset}")
-'''
-
-BLENDER_MD = """## Step 3: Blender, 3D city blocks and vehicles
-
-Downloads Blender 4.2 LTS (about 350 MB, free) and builds the models as `.fbx`, which Unity imports directly.
+Downloads Blender 4.2 LTS (about 350 MB, free). Step 2 uses it to build the 3D city blocks and vehicles as `.fbx`, which Unity imports directly. If the download fails, step 2 still makes the voices and images.
 """
 
 BLENDER = r'''BLENDER_URL = "https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz"
 BLENDER_DIR = pathlib.Path("/content/blender")
 BLENDER = BLENDER_DIR / "blender-4.2.3-linux-x64" / "blender"
-MODELS = UNITY / "Art" / "Models"
 
 if not BLENDER.exists():
     run(["apt-get", "-qq", "install", "-y", "libxi6", "libxxf86vm1", "libxfixes3", "libxrender1",
@@ -135,59 +108,42 @@ if not BLENDER.exists():
     BLENDER_DIR.mkdir(parents=True, exist_ok=True)
     run(["wget", "-q", "-O", "/content/blender.tar.xz", BLENDER_URL], step="download blender")
     run(["tar", "-xf", "/content/blender.tar.xz", "-C", str(BLENDER_DIR)], step="unpack blender")
-
-jobs = [
-    ("gen_city_block.py", ["--seed", "1", "--style", "chawl"], MODELS / "City" / "Block_Chawl_01.fbx"),
-    ("gen_city_block.py", ["--seed", "2", "--style", "market"], MODELS / "City" / "Block_Market_01.fbx"),
-    ("gen_city_block.py", ["--seed", "3", "--style", "oldcity"], MODELS / "City" / "Block_OldCity_01.fbx"),
-    ("gen_vehicle_auto.py", ["--kind", "auto", "--seed", "1"], MODELS / "Vehicles" / "Auto_01.fbx"),
-    ("gen_vehicle_auto.py", ["--kind", "hatchback", "--seed", "1"], MODELS / "Vehicles" / "Hatchback_01.fbx"),
-]
-if BLENDER.exists():
-    for script, args, out in jobs:
-        run([str(BLENDER), "-b", "-P", script, "--", *args, "--out", str(out)],
-            cwd=WORK / "tools" / "blender", step=f"blender {out.name}")
-else:
-    FAILED.append("blender not installed")
+print("Blender ready." if BLENDER.exists() else "Blender is not installed; step 2 skips the 3D models.")
 '''
 
-COPY_MD = """## Step 4: put the files into the Unity project
+BUILD_MD = """## Step 2: make the voices, images and 3D models
+
+Runs `tools/content/build_all.py`, the same command you can run on any computer:
+
+1. **Sarvam** translates the intro lines that have no Hindi yet and records all 20 lines in English and Hindi (about 54 calls). Machine-translated Hindi is marked for review by a Hindi speaker.
+2. **Gemini** draws about 20 images: shop signs, road textures, UI icons and loading screens. If Gemini says the image model needs billing or a quota is used up, those steps fail and the rest still runs.
+3. **Blender** builds 3 city blocks, an auto-rickshaw and a hatchback.
+4. Everything is copied into the Unity project folders.
+
+It takes about 10 to 20 minutes and ends with a summary of what worked.
 """
 
-COPY = r'''out = WORK / "tools" / "content" / "out"
-copied = 0
+BUILD = r'''cmd = ["python3", "tools/content/build_all.py"]
+if BLENDER.exists():
+    cmd += ["--blender", str(BLENDER)]
+result = subprocess.run(cmd, cwd=WORK, capture_output=True, text=True, check=False)
+output = hide(result.stdout + result.stderr)
+print(output[-12000:])
+summary = output.split("=== summary ===")[-1]
+for line in summary.splitlines():
+    if line.startswith("FAILED "):
+        FAILED.append(line[len("FAILED "):])
+if result.returncode != 0 and not any(line.startswith("FAILED ") for line in summary.splitlines()):
+    FAILED.append(f"build_all.py (exit code {result.returncode})")
 
-voices = out / "onboarding_intro"
-if voices.exists():
-    target = UNITY / "Audio" / "Dialogue" / "onboarding_intro"
-    target.mkdir(parents=True, exist_ok=True)
-    for wav in sorted(voices.glob("*.wav")):
-        shutil.copy2(wav, target / wav.name)
-        copied += 1
-
-translated = out / "onboarding_intro.translated.json"
-if translated.exists():
-    target = UNITY / "Localization" / "Dialogue"
-    target.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(translated, target / "onboarding_intro.json")
-    copied += 1
-
-art = out / "gemini"
-if art.exists():
-    for preset_dir in sorted(p for p in art.iterdir() if p.is_dir()):
-        target = UNITY / "Art" / "Generated" / preset_dir.name
-        target.mkdir(parents=True, exist_ok=True)
-        for image in sorted(preset_dir.iterdir()):
-            shutil.copy2(image, target / image.name)
-            copied += 1
-
-models = sorted((UNITY / "Art" / "Models").rglob("*.fbx"))
-print(f"Copied {copied} voice/text/image files. Models built: {len(models)}")
-for m in models:
-    print("  ", m.relative_to(WORK))
+assets = sorted(p for p in UNITY.rglob("*") if p.is_file() and p.suffix.lower() in {".wav", ".json", ".png", ".jpg", ".fbx"}
+                and ("Dialogue" in p.parts or "Generated" in p.parts or "Models" in p.parts))
+print(f"Files in the Unity project: {len(assets)}")
+for p in assets:
+    print("  ", p.relative_to(WORK))
 '''
 
-PUSH_MD = """## Step 5: upload to GitHub
+PUSH_MD = """## Step 3: upload to GitHub
 """
 
 PUSH = r'''run(["git", "add", "client/GangsOfBharat.Unity/Assets"], cwd=WORK)
@@ -234,10 +190,8 @@ nb = {
     },
     "cells": [
         md(INTRO), code(SETUP),
-        md(SARVAM_MD), code(SARVAM),
-        md(GEMINI_MD), code(GEMINI),
         md(BLENDER_MD), code(BLENDER),
-        md(COPY_MD), code(COPY),
+        md(BUILD_MD), code(BUILD),
         md(PUSH_MD), code(PUSH),
         md(END_MD),
     ],

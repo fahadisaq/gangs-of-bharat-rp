@@ -13,6 +13,34 @@ export GEMINI_API_KEY=...
 
 Without a key, a real run exits with a clear message (exit code 2). `--dry-run` works without a key and prints every planned request with the key header shown as a placeholder.
 
+## Everything in one command: `build_all.py`
+
+Runs Sarvam (intro dialogue, en and hi), Gemini (all four presets), optionally Blender, and then copies the results into the Unity project. Every step runs even if an earlier one failed; the summary at the end lists each step as `ok` or `FAILED`, and the exit code is 1 if anything failed.
+
+```bash
+python3 tools/content/build_all.py --dry-run --skip-gemini   # no key, no network, nothing written
+python3 tools/content/build_all.py                            # voices + images, then copy
+python3 tools/content/build_all.py --blender /Applications/Blender.app/Contents/MacOS/Blender
+python3 tools/content/build_all.py --skip-sarvam --skip-gemini --blender blender   # models only
+```
+
+| Flag | Effect |
+| --- | --- |
+| `--skip-sarvam`, `--skip-gemini` | Leave out that API step |
+| `--blender PATH` | Blender executable (or a name on `PATH`). Builds `Block_Chawl_01`, `Block_Market_01`, `Block_OldCity_01` (seeds 1-3) and `Auto_01`, `Hatchback_01` with `tools/blender/*.py`, written straight to `Assets/Art/Models/City` and `Assets/Art/Models/Vehicles` |
+| `--dry-run` | Passes `--dry-run` to the API scripts, prints Blender commands without starting Blender, lists the copies without writing |
+| `--out`, `--unity-assets` | Other output or Unity folders (used by the tests) |
+
+The copy step is the same as the Colab notebook's (`notebooks/GangsOfBharat_Content.ipynb`, built by `scripts/make_colab_notebook.py`, now calls `build_all.py`):
+
+| From `tools/content/out/` | To `client/GangsOfBharat.Unity/Assets/` |
+| --- | --- |
+| `onboarding_intro/*.wav` | `Audio/Dialogue/onboarding_intro/` |
+| `onboarding_intro.translated.json` | `Localization/Dialogue/onboarding_intro.json` |
+| `gemini/<preset>/*` | `Art/Generated/<preset>/` |
+
+The Unity scene generator (`Assets/Editor/TestSceneBuilder.cs`) picks these files up if they exist: intro dialogue with voices, shop signs, the worn asphalt road texture and a loading screen.
+
 ## Sarvam: `sarvam_dialogue.py`
 
 | Mode | What it does |
@@ -64,4 +92,4 @@ ruff check tools
 python3 -m pytest tools/content/tests -q
 ```
 
-The tests block `urllib.request.urlopen`, so they never touch the network, and they check that a key set in the environment never appears in the output.
+The tests block `urllib.request.urlopen`, so they never touch the network, and they check that a key set in the environment never appears in the output. `tests/test_build_all.py` checks the copy layout, the Blender command lines (Blender is never started) and that a failing step does not stop the others.
