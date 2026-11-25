@@ -4,7 +4,7 @@
 
 - **Title:** GANGS OF BHARAT.
 - **Genre:** mobile online roleplay (RP) "live a life" city game. Players live a second life in one shared Indian city: they take jobs, earn and spend ₹, buy vehicles, houses and businesses, join factions (police, army, hospital, gangs, mafia and more) and talk to each other with text and voice.
-- **Rating:** 18+ only. The game has crime, weapons, alcohol, tobacco parodies and adult themes. An age gate runs at first launch (see [16. Legal and Operations](16-legal-ops.md)).
+- **Rating:** 18+ only. The game has crime, weapons (including guns, confirmed by the owner; see [05. Justice and Crime](05-justice-and-crime.md#weapons)), alcohol, tobacco parodies and adult themes. An age gate runs at first launch (see [16. Legal and Operations](16-legal-ops.md)).
 - **Everything is run by real players.** Police officers, doctors, judges, gang bosses, the mayor and the Mass Media head are players. NPCs exist only for traffic, crowds, shopkeepers in unstaffed shops, the story and AI side content.
 - **Engine:** Unity (client for Android and iOS). Authoritative dedicated game server (see [13. Technical Architecture](13-tech-architecture.md)).
 - **Setting:** Mayanagri, a fictional Mumbai-inspired megacity (see [02. World](02-world-mayanagri.md)).

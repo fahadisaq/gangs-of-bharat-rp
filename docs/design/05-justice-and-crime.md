@@ -30,9 +30,11 @@
 
 ## Weapons
 
-- **Weapons are rare.**
-- Weapons are **legal only for Police and Army**, and only while on duty.
-- Everyone else carrying a weapon commits a crime. Illegal weapons come from convoy hijacks, the black market and mafia arms sales.
+**Confirmed by the owner:** weapons, including guns, are in the game. The game is rated 18+ (see [01. Vision and Scope](01-vision-and-scope.md) and [16. Legal and Operations](16-legal-ops.md)).
+
+- **Weapons are rare and serious.** A gun is never a casual item: getting one is hard, and using one has heavy consequences (wanted stars, arrest, court, injury).
+- **Legal guns:** only **Police and Army**, with a **weapon licence**, and only while on duty. Guns are issued from the faction armory (see [04. Factions](04-factions.md)).
+- **Illegal guns:** gangs (and everyone else without a licence) can only get guns illegally, through **smuggling** and **convoy theft** (see the weapon convoy in [06. Events](06-events.md)), plus the black market and mafia arms sales. Carrying an illegal weapon is a crime.
 - Weapons cannot be used in safe zones (places of worship) or by players under new-player protection.
 
 ## Character Kill (CK)

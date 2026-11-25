@@ -36,6 +36,14 @@
 
 Related docs: [Architecture](../ARCHITECTURE.md), [Roadmap](../ROADMAP.md), [Environment Status](../ENVIRONMENT_STATUS.md).
 
+## Decisions confirmed by the owner
+
+Items that were questions before and are now decided.
+
+| Decision | Detail | Where |
+| --- | --- | --- |
+| Weapons are in the game | Guns are legal only for Police and Army with a weapon licence (on duty), illegal for gangs through smuggling and convoy theft. Weapons are rare and serious. The game is rated 18+. | [05. Justice and Crime](05-justice-and-crime.md#weapons), [01. Vision and Scope](01-vision-and-scope.md), [16. Legal and Operations](16-legal-ops.md) |
+
 ## Open items (DRAFT – owner review)
 
 | Item | Proposal | Where |

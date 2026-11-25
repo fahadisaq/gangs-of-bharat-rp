@@ -18,7 +18,7 @@ This chapter lists what must be in place before launch. It is not legal advice; 
 - **Terms of Service** and **Privacy Policy** in Hindi and English, shown at sign-up and in the store listings.
 - **CCPA Dark Patterns Guidelines, 2023** for the store (see [11. Monetization](11-monetization.md)).
 - **Refund policy** in line with Google Play and App Store rules.
-- **18+ age gate** at first launch, plus the correct age rating in both stores.
+- **18+ age gate** at first launch, plus the correct age rating in both stores. The rating questionnaires (IARC on Google Play, Apple's age rating) must declare **realistic weapons / guns and violence**: the owner confirmed that guns are in the game (legal for licensed Police and Army, illegal for gangs; see [05. Justice and Crime](05-justice-and-crime.md#weapons)).
 
 ## Trademarks
 
