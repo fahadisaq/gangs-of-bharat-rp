@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using GangsOfBharat.Shared.Net;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 
 namespace GangsOfBharat.Client
 {
@@ -90,11 +92,12 @@ namespace GangsOfBharat.Client
     /// <summary>
     /// In-game voice. Capture: Microphone at 16 kHz, cut into 20 ms frames, encoded and sent as
     /// unreliable VoiceFrame messages. Modes: push-to-talk (hold the HUD button or V) or open
-    /// mic with a simple level gate. Channels: Proximity (server forwards to players within
+    /// mic with a simple level gate. Keys: V push-to-talk, B faction radio; without the Input
+    /// System (legacy Input Manager) TouchControls also shows Talk / Radio buttons while connected. Channels: Proximity (server forwards to players within
     /// 40 m, played as 3D audio at the speaker) or FactionRadio (server forwards to every
     /// online faction member map-wide, played as 2D radio audio). The server only relays
     /// frames; it never decodes or logs voice.
-    /// UNVERIFIED: written against Unity 6 APIs, not compiled in the sandbox.
+    /// UNVERIFIED: written against Unity 6 APIs, compiled only against stubs in the sandbox.
     /// </summary>
     public sealed class VoiceChat : MonoBehaviour
     {
@@ -126,8 +129,10 @@ namespace GangsOfBharat.Client
         private int _micReadPos;
         private bool _pttHeld;
         private ushort _sequence;
+#if ENABLE_INPUT_SYSTEM
         private InputAction _pttKey;
         private InputAction _radioKey;
+#endif
 
         public TalkMode Mode { get { return mode; } set { mode = value; } }
         public VoiceChannel Channel { get { return channel; } set { channel = value; } }
@@ -189,16 +194,42 @@ namespace GangsOfBharat.Client
             _decoded = new float[_codec.FrameSamples];
             _readScratch = new float[_codec.FrameSamples];
 
+#if ENABLE_INPUT_SYSTEM
             _pttKey = new InputAction("PushToTalk", InputActionType.Button);
             _pttKey.AddBinding("<Keyboard>/v");
             _radioKey = new InputAction("RadioPushToTalk", InputActionType.Button);
             _radioKey.AddBinding("<Keyboard>/b");
+#endif
         }
+
+#if ENABLE_INPUT_SYSTEM
+        private bool PttKeyHeld()
+        {
+            return _pttKey.IsPressed();
+        }
+
+        private bool RadioKeyHeld()
+        {
+            return _radioKey.IsPressed();
+        }
+#else
+        private bool PttKeyHeld()
+        {
+            return Input.GetKey(KeyCode.V) || TouchControls.Instance.GetButton(TouchButton.Talk);
+        }
+
+        private bool RadioKeyHeld()
+        {
+            return Input.GetKey(KeyCode.B) || TouchControls.Instance.GetButton(TouchButton.Radio);
+        }
+#endif
 
         private void OnEnable()
         {
+#if ENABLE_INPUT_SYSTEM
             _pttKey.Enable();
             _radioKey.Enable();
+#endif
             if (NetClient.Instance != null)
             {
                 NetClient.Instance.VoiceReceived += OnVoice;
@@ -208,8 +239,10 @@ namespace GangsOfBharat.Client
 
         private void OnDisable()
         {
+#if ENABLE_INPUT_SYSTEM
             _pttKey.Disable();
             _radioKey.Disable();
+#endif
             if (NetClient.Instance != null)
             {
                 NetClient.Instance.VoiceReceived -= OnVoice;
@@ -280,9 +313,12 @@ namespace GangsOfBharat.Client
             {
                 return;
             }
-            bool radioKey = _radioKey.IsPressed();
+#if !ENABLE_INPUT_SYSTEM
+            TouchControls.Instance.ShowVoiceButtons();
+#endif
+            bool radioKey = RadioKeyHeld();
             VoiceChannel sendChannel = radioKey ? VoiceChannel.FactionRadio : channel;
-            bool talking = mode == TalkMode.OpenMic || _pttHeld || _pttKey.IsPressed() || radioKey;
+            bool talking = mode == TalkMode.OpenMic || _pttHeld || PttKeyHeld() || radioKey;
 
             int micPos = Microphone.GetPosition(_micDevice);
             int clipSamples = _micClip.samples;

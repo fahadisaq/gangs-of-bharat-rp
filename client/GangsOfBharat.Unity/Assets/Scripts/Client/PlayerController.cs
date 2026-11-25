@@ -1,27 +1,35 @@
 using GangsOfBharat.Shared.Net;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 
 namespace GangsOfBharat.Client
 {
     /// <summary>
-    /// On-foot input with the Input System. Touch: put an OnScreenStick (Input System package,
-    /// UnityEngine.InputSystem.OnScreen) on the HUD with Control Path &lt;Gamepad&gt;/leftStick and
-    /// OnScreenButton components for sprint (&lt;Gamepad&gt;/buttonEast), jump
-    /// (&lt;Gamepad&gt;/buttonSouth) and interact (&lt;Gamepad&gt;/buttonWest). The same actions read
-    /// a keyboard (WASD, Shift, Space, E) and a real gamepad.
+    /// On-foot input.
+    /// With the Input System (ENABLE_INPUT_SYSTEM): touch needs an OnScreenStick (Input System
+    /// package, UnityEngine.InputSystem.OnScreen) on the HUD with Control Path
+    /// &lt;Gamepad&gt;/leftStick and OnScreenButton components for sprint (&lt;Gamepad&gt;/buttonEast),
+    /// jump (&lt;Gamepad&gt;/buttonSouth) and interact (&lt;Gamepad&gt;/buttonWest). The same actions
+    /// read a keyboard (WASD, Shift, Space, E) and a real gamepad.
+    /// Without it (legacy Input Manager, the current build): TouchControls provides a virtual
+    /// joystick on the left half of the screen and Jump / Run / Enter buttons; the keyboard
+    /// (WASD, Shift, Space, E) works in the editor.
     /// Movement is converted to a world-space direction relative to the camera, which is what
     /// the server and the shared Movement code expect.
-    /// UNVERIFIED: written against Unity 6 / Input System 1.11 APIs, not compiled in the sandbox.
+    /// UNVERIFIED: written against Unity 6 / Input System 1.11 APIs, compiled only against stubs.
     /// </summary>
     public sealed class PlayerController : MonoBehaviour
     {
         [SerializeField] private Transform cameraTransform;
 
+#if ENABLE_INPUT_SYSTEM
         private InputAction _move;
         private InputAction _sprint;
         private InputAction _jump;
         private InputAction _interact;
+#endif
         private bool _interactPressed;
 
         /// <summary>Fired when the interact button is pressed (enter vehicle, talk, use).</summary>
@@ -29,6 +37,7 @@ namespace GangsOfBharat.Client
 
         private void Awake()
         {
+#if ENABLE_INPUT_SYSTEM
             _move = new InputAction("Move", InputActionType.Value);
             _move.AddBinding("<Gamepad>/leftStick");
             _move.AddCompositeBinding("2DVector")
@@ -48,14 +57,8 @@ namespace GangsOfBharat.Client
             _interact = new InputAction("Interact", InputActionType.Button);
             _interact.AddBinding("<Keyboard>/e");
             _interact.AddBinding("<Gamepad>/buttonWest");
-            _interact.performed += ctx =>
-            {
-                _interactPressed = true;
-                if (InteractPressed != null)
-                {
-                    InteractPressed();
-                }
-            };
+            _interact.performed += ctx => OnInteract();
+#endif
 
             if (cameraTransform == null && Camera.main != null)
             {
@@ -63,6 +66,7 @@ namespace GangsOfBharat.Client
             }
         }
 
+#if ENABLE_INPUT_SYSTEM
         private void OnEnable()
         {
             _move.Enable();
@@ -79,10 +83,76 @@ namespace GangsOfBharat.Client
             _interact.Disable();
         }
 
+        private Vector2 ReadMove()
+        {
+            return _move.ReadValue<Vector2>();
+        }
+
+        private bool SprintHeld()
+        {
+            return _sprint.IsPressed();
+        }
+
+        private bool JumpHeld()
+        {
+            return _jump.IsPressed();
+        }
+#else
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.E) || TouchControls.Instance.GetButtonDown(TouchButton.Interact))
+            {
+                OnInteract();
+            }
+        }
+
+        private Vector2 ReadMove()
+        {
+            Vector2 keys = Vector2.zero;
+            if (Input.GetKey(KeyCode.W))
+            {
+                keys.y += 1f;
+            }
+            if (Input.GetKey(KeyCode.S))
+            {
+                keys.y -= 1f;
+            }
+            if (Input.GetKey(KeyCode.D))
+            {
+                keys.x += 1f;
+            }
+            if (Input.GetKey(KeyCode.A))
+            {
+                keys.x -= 1f;
+            }
+            return keys + TouchControls.Instance.Move;
+        }
+
+        private bool SprintHeld()
+        {
+            return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)
+                || TouchControls.Instance.GetButton(TouchButton.Sprint);
+        }
+
+        private bool JumpHeld()
+        {
+            return Input.GetKey(KeyCode.Space) || TouchControls.Instance.GetButton(TouchButton.Jump);
+        }
+#endif
+
+        private void OnInteract()
+        {
+            _interactPressed = true;
+            if (InteractPressed != null)
+            {
+                InteractPressed();
+            }
+        }
+
         /// <summary>Fills the on-foot part of an input frame. Called once per client tick.</summary>
         public void SampleInput(ref InputFrame frame)
         {
-            Vector2 stick = _move.ReadValue<Vector2>();
+            Vector2 stick = ReadMove();
             if (stick.sqrMagnitude > 1f)
             {
                 stick.Normalize();
@@ -96,11 +166,11 @@ namespace GangsOfBharat.Client
             frame.Yaw = camYaw;
 
             InputButtons buttons = InputButtons.None;
-            if (_sprint.IsPressed())
+            if (SprintHeld())
             {
                 buttons |= InputButtons.Sprint;
             }
-            if (_jump.IsPressed())
+            if (JumpHeld())
             {
                 buttons |= InputButtons.Jump;
             }

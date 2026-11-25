@@ -22,7 +22,11 @@ namespace GangsOfBharat.Client
     /// ring buffer and sends it. When a snapshot arrives it resets to the authoritative state and
     /// replays the inputs the server has not processed yet (reconciliation). The visible
     /// transform smooths out small corrections; large ones snap.
-    /// UNVERIFIED: written against Unity 6 APIs, not compiled in the sandbox.
+    /// Offline test mode (offlineTestMode, off by default): when there is no NetClient, or it has
+    /// not connected after offlineFallbackSeconds, the same shared Movement code runs locally
+    /// every frame and nothing is sent. A later successful connection switches back to the
+    /// networked path (OnConnected resets the state to the server spawn).
+    /// UNVERIFIED: written against Unity 6 APIs, compiled only against stubs in the sandbox.
     /// </summary>
     public sealed class ClientPrediction : MonoBehaviour
     {
@@ -34,6 +38,11 @@ namespace GangsOfBharat.Client
         [Tooltip("Corrections larger than this (metres) snap instead of smoothing.")]
         [SerializeField] private float snapDistance = 4f;
         [SerializeField] private float smoothing = 12f;
+        [Header("Offline test mode")]
+        [Tooltip("Simulate locally without a server when none is reachable (test scenes only).")]
+        [SerializeField] private bool offlineTestMode;
+        [Tooltip("Seconds to wait for a NetClient connection before going offline.")]
+        [SerializeField] private float offlineFallbackSeconds = 5f;
 
         private readonly InputFrame[] _inputs = new InputFrame[BufferSize];
         private readonly PlayerInputMessage _outInput = new PlayerInputMessage();
@@ -44,6 +53,8 @@ namespace GangsOfBharat.Client
         private int _vehicleId;
         private Vector3 _visualOffset;
         private bool _hasState;
+        private bool _offline;
+        private float _startTime;
 
         public bool InVehicle { get { return _vehicleId != 0; } }
         public int VehicleId { get { return _vehicleId; } }
@@ -59,6 +70,10 @@ namespace GangsOfBharat.Client
         public float PredictedYaw { get { return InVehicle ? _vehicle.Yaw : _character.Yaw; } }
         /// <summary>Predicted forward speed of the vehicle (m/s); 0 on foot.</summary>
         public float VehicleSpeed { get { return InVehicle ? _vehicle.Speed : 0f; } }
+        /// <summary>True while simulating locally without a server (offline test mode).</summary>
+        public bool IsOffline { get { return _offline; } }
+        /// <summary>The transform that shows the local player (may be null).</summary>
+        public Transform Visual { get { return visual; } }
 
         private void OnEnable()
         {
@@ -84,8 +99,14 @@ namespace GangsOfBharat.Client
             net.SnapshotReceived -= OnSnapshot;
         }
 
+        private void Start()
+        {
+            _startTime = Time.time;
+        }
+
         private void OnConnected(ConnectAcceptMessage accept)
         {
+            _offline = false;
             _character.X = accept.SpawnX;
             _character.Y = accept.SpawnY;
             _character.Z = accept.SpawnZ;
@@ -107,6 +128,18 @@ namespace GangsOfBharat.Client
             _vehicle.Speed = 0f;
         }
 
+        /// <summary>Offline test mode only: moves the on-foot character (e.g. beside a vehicle).</summary>
+        public void PlaceCharacter(Vector3 position)
+        {
+            if (!_offline || InVehicle)
+            {
+                return;
+            }
+            _character.X = position.x;
+            _character.Y = position.y;
+            _character.Z = position.z;
+        }
+
         /// <summary>Called by VehicleController after the server confirmed ExitVehicle.</summary>
         public void EndDriving()
         {
@@ -118,12 +151,54 @@ namespace GangsOfBharat.Client
             _vehicleDef = null;
         }
 
-        private void OnClientTick(float dt)
+        private void Update()
         {
-            if (!_hasState)
+            if (!offlineTestMode)
             {
                 return;
             }
+            if (!_offline)
+            {
+                if (_hasState)
+                {
+                    return; // networked session in progress
+                }
+                NetClient net = NetClient.Instance;
+                bool noServer = net == null
+                    || (net.State != ClientState.Connected && Time.time - _startTime >= offlineFallbackSeconds);
+                if (!noServer)
+                {
+                    return;
+                }
+                StartOffline();
+            }
+            // Offline there is nothing to stay in lockstep with, so step every frame for smooth motion.
+            float dt = Mathf.Min(Time.deltaTime, 0.1f);
+            if (dt > 0f)
+            {
+                InputFrame frame = SampleFrame();
+                Apply(ref frame, dt);
+            }
+        }
+
+        private void StartOffline()
+        {
+            Transform from = visual != null ? visual : transform;
+            Vector3 p = from.position;
+            _character.X = p.x;
+            _character.Y = p.y;
+            _character.Z = p.z;
+            _character.Yaw = from.eulerAngles.y * Mathf.Deg2Rad;
+            _vehicleId = 0;
+            _vehicleDef = null;
+            _visualOffset = Vector3.zero;
+            _hasState = true;
+            _offline = true;
+            Debug.Log("ClientPrediction: no server connection, offline test mode (local movement only).");
+        }
+
+        private InputFrame SampleFrame()
+        {
             InputFrame frame = new InputFrame();
             if (InVehicle && vehicleController != null)
             {
@@ -133,6 +208,16 @@ namespace GangsOfBharat.Client
             {
                 playerController.SampleInput(ref frame);
             }
+            return frame;
+        }
+
+        private void OnClientTick(float dt)
+        {
+            if (!_hasState || _offline)
+            {
+                return;
+            }
+            InputFrame frame = SampleFrame();
             frame.Tick = ++_tick;
             _inputs[frame.Tick % BufferSize] = frame;
             Apply(ref frame, dt);
