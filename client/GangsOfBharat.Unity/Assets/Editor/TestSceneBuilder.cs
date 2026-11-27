@@ -622,6 +622,12 @@ namespace GangsOfBharat.EditorTools
             GameObject overlay = new GameObject("TestBuildOverlay");
             TestBuildOverlay label = overlay.AddComponent<TestBuildOverlay>();
             SetRef(label, "prediction", prediction);
+
+            // Offline job loop so the test APK has something to actually play. The real JobHud is
+            // server-driven and does nothing without a server, so it is deliberately not used here.
+            GameObject jobs = new GameObject("OfflineJobHud");
+            OfflineJobHud jobHud = jobs.AddComponent<OfflineJobHud>();
+            SetRef(jobHud, "prediction", prediction);
         }
 
         private static void SetRef(UnityEngine.Object target, string field, UnityEngine.Object value)
